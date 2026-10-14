@@ -1,0 +1,8 @@
+N,conflicts,R,density,seed,exact_budget_ms,greedy_slots,exact_slots,greedy_ms,exact_ms,greedy_optimal,exact_optimal,exact_lower_bound,timed_out
+6,6,3,0.3500,228,500,3,3,0.021000,0.021375,true,true,3,false
+8,6,3,0.3500,290,500,3,3,0.026666,0.023541,true,true,3,false
+10,16,3,0.3500,352,500,4,4,0.026416,0.027084,true,true,4,false
+12,24,3,0.3500,414,500,5,4,0.033167,0.059500,false,true,4,false
+16,46,3,0.3500,538,500,6,6,0.055500,0.056708,true,true,6,false
+20,66,3,0.3500,662,500,8,7,0.083541,0.116625,false,true,7,false
+24,106,3,0.3500,786,500,9,8,0.115000,0.195750,false,true,8,false

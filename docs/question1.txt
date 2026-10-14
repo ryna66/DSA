@@ -1,0 +1,15 @@
+Given N points on a 2D plane, implement two algorithms to find the closest pair of points: the Brute-Force method and the Divide-and-Conquer method. Output the minimum distance and the pair of points for each. Ensure the algorithms handle all corner cases (e.g., duplicate points, collinear points, points sharing the same x or y coordinate, N = 2, N < 2). Then, analyse performance for increasing input sizes and verify that both algorithms always agree on the minimum distance.
+Input Format:
+Standard Input: (integer) N
+Generate the next N coordinates (x, y) randomly (integer or floating point).
+Output Format:
+First line (Brute-Force): Minimum distance (6 decimal places), followed by the two coordinates of the closest pair.
+Second line (Divide-and-Conquer): Minimum distance (6 decimal places), followed by the two coordinates of the closest pair.
+Third line: Execution time of each algorithm (in ms).
+Visualization:
+Plot all points on a plane.
+Highlight the closest pair found by each algorithm (different colours) and draw the line joining them.
+Show the dividing line and the strip region (of width 2d) used by the Divide-and-Conquer algorithm.
+Plot a running-time vs N graph for both algorithms.
+Animate the recursive splitting and merging steps
+

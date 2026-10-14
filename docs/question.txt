@@ -1,0 +1,20 @@
+You are given an N x N grid. Each cell is one of: '.' (open cell), '#' (wall), 'S' (start), 'E' (exit), a lowercase letter 'a'-'f' (a key), or an uppercase letter 'A'-'F' (a door). You may move up, down, left or right, one cell per step. Stepping on a key cell picks up that key automatically (keys are never used up). A door 'A'-'F' can be entered only if you already hold the matching key 'a'-'f'. Find the length of the shortest path from S to E.
+
+Input Format:
+Standard input line: T (number of distinct key/door types, 1 ≤ T ≤ 6)
+Method 1: Read the NxN grid from a CSV file.
+Method 2: in the front page this is option for putting values(take refernce form image(/Users/awanishkumar/hornet/bhang_b/docs/front_page_format.jpg)
+method 3: Generate the NxN grid randomly to form a valid maze containing T keys and T doors, with at least one solvable path.
+
+Output Format:
+Output 1: Single integer shortest path length, or -1 if not possible.
+Output 2: A CSV file with the shortest path marked with ‘x’s (keys picked up and doors opened along the path must still be identifiable).
+Ooutut 3: Assume in the landing page their first grild like question then output with all visulization methods to follow.
+Any good output method is appricitated use your mind and make it more vibrant, interactive and please use very simple solid color.
+
+Visualization:
+Display the grid with colours:
+White = open cell, Black = wall, Green = start, Red = exit; each key/door pair has its own unique colour.
+Highlight the path taken.
+Animate key pick-ups (key disappears, and a key-inventory panel updates) and door openings (door turns from its colour to white with an unlock mark).
+

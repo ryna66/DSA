@@ -1,0 +1,18 @@
+A university has N courses. Two courses conflict if at least one student is enrolled in both, so they cannot be scheduled in the same time slot. In addition, at most R exams can be held in any single slot (limited number of halls). Assign every course to a time slot so that no two conflicting courses share a slot and no slot exceeds R exams, while minimizing the total number of time slots. Output the minimum number of slots found and the complete timetable. Implement at least a greedy heuristic (e.g., Welsh-Powell or DSatur) and an exact method (e.g., backtracking / branch-and-bound), and compare them.
+Input Format:
+Option 1:
+First line: N M R
+Next M lines: u v (courses u and v have a conflict)
+Option 2:
+First line: N R
+Generate a random conflict graph with a user specified edge density.
+Output Format:
+Output 1: Minimum number of slots (for each algorithm implemented), along with whether the result is proven optimal.
+Output 2: Slot-wise list of courses (e.g., Slot 1: 2, 5, 9).
+Output 3: CSV file with the timetable (rows = slots, columns = exam positions/halls).
+Visualization:
+Draw the conflict graph with nodes coloured according to their assigned slot.
+Show the final timetable as a grid, with the same colour scheme as the graph.
+Show a comparison chart of slots used and running time for each algorithm as N increases.
+Animate the order in which courses are assigned to slots
+

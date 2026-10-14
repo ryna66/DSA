@@ -1,0 +1,20 @@
+You must travel from city 1 to city N using one-way flights. Each flight has a ticket price. You are allowed to make at most K stops (intermediate cities) on the way. You also hold C discount coupons; a coupon can be applied to a single flight to halve its price (rounded down), and at most one coupon can be used per flight. Find the minimum total cost to reach N, or -1 if impossible.
+Input Format:
+Option 1:
+First line: N M
+Next line: K C (maximum stops, number of coupons)
+Next M lines: u v p (one-way flight from u to v with price p)
+Option 2:
+First line: K C
+Read the input graph from a CSV file.
+Option 3:
+Generate a valid graph with user specified K and C.
+Output Format:
+Output 1: minimum cost or -1
+Output 2: CSV file of the graph with the path marked with ‘x’s (also indicate the flights on which coupons were used).
+Visualization:
+Draw graph with nodes as cities and directed, weighted edges as flights.
+Mark start = green, destination = red, intermediate stops = orange.
+Highlight chosen path.
+Animate the journey: show the running cost and stops used, and change the colour of a flight (e.g., to gold) when a coupon is applied, displaying original price → discounted price.
+
