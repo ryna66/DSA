@@ -1,5 +1,19 @@
 # DSA — Data Structures & Algorithms Assignment
 
+<p align="center">
+  <a href="https://vercel-app-tan-eight.vercel.app/">
+    <img src="https://img.shields.io/badge/%E2%96%B6_LIVE_DEMO-OPEN_ON_VERCEL-315BEC?style=for-the-badge&amp;logo=vercel&amp;logoColor=white" alt="Live Demo — Open on Vercel">
+  </a>
+</p>
+
+## 🚀 [Try the live website →](https://vercel-app-tan-eight.vercel.app/)
+
+> **Team 8PM · All four interactive projects, live in your browser.**
+>
+> **[vercel-app-tan-eight.vercel.app](https://vercel-app-tan-eight.vercel.app/)** — no installation needed.
+
+---
+
 A collection of four algorithm-focused projects, each solving a classic CS problem with full implementations, interactive web/CLI interfaces, comprehensive test suites, and empirical performance analysis.
 
 ---
