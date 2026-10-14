@@ -4,7 +4,7 @@ import json, sys, os
 from urllib.parse import parse_qs
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'lib'))
-from scheduler import graph, random_graph, compare, form_graph, graph_map, comparison_map, result_map
+from scheduler import graph, random_graph, compare, form_graph, graph_map, comparison_map
 
 
 def respond(handler, status, data):
@@ -37,6 +37,8 @@ class handler(BaseHTTPRequestHandler):
             if path.endswith('/solve'):
                 g = form_graph(params)
                 budget = long_field(params, 'budget', 2000)
+                if not 0 <= budget <= 10000:
+                    raise ValueError('Use an exact search budget from 0 to 10000 ms.')
                 c = compare(g, budget)
                 respond(self, 200, comparison_map(c))
             elif path.endswith('/generate'):
@@ -56,9 +58,11 @@ class handler(BaseHTTPRequestHandler):
                 density = float(params.get('density', '0.3'))
                 seed = long_field(params, 'seed', 42)
                 budget = long_field(params, 'budget', 1000)
+                if not 0 <= budget <= 10000:
+                    raise ValueError('Use an exact search budget from 0 to 10000 ms.')
                 g = random_graph(n, halls, density, seed)
                 c = compare(g, budget)
-                respond(self, 200, {"n": n, "edges": len(g['edges']), "greedy": result_map(c['greedy']), "exact": result_map(c['exact'])})
+                respond(self, 200, {"n": n, "edges": len(g['edges']), "greedy": c['greedy'], "exact": c['exact']})
             else:
                 respond(self, 404, {"error": "Unknown endpoint."})
         except (ValueError, TypeError) as e:

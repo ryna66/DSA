@@ -14,11 +14,11 @@ body{font-family:'Inter',-apple-system,'Segoe UI',system-ui,sans-serif;backgroun
 .nav-brand{display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:1.1rem;text-decoration:none;color:var(--text)}
 .nav-brand svg{width:28px;height:28px}
 .nav-links{display:flex;gap:2rem;align-items:center}
-.nav-links a{text-decoration:none;color:var(--muted);font-size:.9rem;font-weight:500;padding:.25rem 0;border-bottom:2px solid transparent;transition:all .2s}
+.nav-links a{text-decoration:none;color:var(--muted);font-size:.9rem;font-weight:500;padding:.25rem 0;border-bottom:2px solid transparent;transition:color .18s,background-color .18s,border-color .18s}
 .nav-links a.active{color:var(--blue);border-bottom-color:var(--blue)}
 .nav-links a:hover{color:var(--blue)}
 .nav-right{display:flex;align-items:center;gap:1rem}
-.github-btn{display:flex;align-items:center;gap:.4rem;padding:.4rem 1rem;border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);font-size:.85rem;font-weight:500;background:var(--white);transition:all .2s}
+.github-btn{display:flex;align-items:center;gap:.4rem;padding:.4rem 1rem;border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);font-size:.85rem;font-weight:500;background:var(--white);transition:color .18s,background-color .18s,border-color .18s}
 .github-btn:hover{border-color:var(--blue);color:var(--blue)}
 .github-btn svg{width:18px;height:18px}
 
@@ -33,7 +33,7 @@ body{font-family:'Inter',-apple-system,'Segoe UI',system-ui,sans-serif;backgroun
 .hero-buttons{display:flex;gap:1rem;flex-wrap:wrap}
 .btn-primary{display:inline-flex;align-items:center;gap:.4rem;padding:.7rem 1.5rem;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:600;text-decoration:none;cursor:pointer;transition:background .2s}
 .btn-primary:hover{background:var(--blue-dark)}
-.btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.5rem;background:var(--white);color:var(--text);border:1px solid var(--border);border-radius:10px;font-size:.95rem;font-weight:500;text-decoration:none;cursor:pointer;transition:all .2s}
+.btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.5rem;background:var(--white);color:var(--text);border:1px solid var(--border);border-radius:10px;font-size:.95rem;font-weight:500;text-decoration:none;cursor:pointer;transition:color .18s,background-color .18s,border-color .18s}
 .btn-outline:hover{border-color:var(--blue);color:var(--blue)}
 .btn-outline svg{width:20px;height:20px}
 
@@ -58,7 +58,7 @@ body{font-family:'Inter',-apple-system,'Segoe UI',system-ui,sans-serif;backgroun
 
 /* ── Cards Grid ── */
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem}
-.card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:1.5rem;display:flex;flex-direction:column;transition:all .3s;position:relative}
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:1.5rem;display:flex;flex-direction:column;transition:border-color .18s;position:relative}
 .card:hover{box-shadow:var(--card-hover);transform:translateY(-2px)}
 .card-num{display:inline-block;font-size:.8rem;font-weight:700;padding:.15rem .55rem;border-radius:6px;margin-bottom:1rem;width:fit-content}
 .card:nth-child(1) .card-num{background:var(--tag-blue-bg);color:var(--tag-blue)}
@@ -94,6 +94,7 @@ body{font-family:'Inter',-apple-system,'Segoe UI',system-ui,sans-serif;backgroun
   .projects-header{flex-direction:column}.search-box{width:100%}
 }
 </style>
+<link rel="stylesheet" href="/site.css">
 </head>
 <body>
 
@@ -106,11 +107,10 @@ body{font-family:'Inter',-apple-system,'Segoe UI',system-ui,sans-serif;backgroun
   <div class="nav-links">
     <a href="/" class="active">Home</a>
     <a href="#projects">Projects</a>
-    <a href="#projects">Leaderboard</a>
-    <a href="#projects">About</a>
+    <a href="/about.html">About</a>
   </div>
   <div class="nav-right">
-    <a class="github-btn" href="https://github.com" target="_blank">
+    <a class="github-btn" href="https://github.com/ryna66/DSA" target="_blank" rel="noopener noreferrer">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
       GitHub
     </a>
@@ -118,20 +118,21 @@ body{font-family:'Inter',-apple-system,'Segoe UI',system-ui,sans-serif;backgroun
 </nav>
 
 <!-- ── Hero ── -->
-<section class="hero">
+<main>
+<section class="hero landing-hero"><div class="beams-background" aria-hidden="true"><div class="beams-layer"></div></div>
   <div class="hero-text">
-    <h1>DSA <span class="accent">Hackathon</span></h1>
+    <span class="eyebrow hero-kicker"><span class="live-dot"></span> TEAM 8PM / THE ALGORITHM LAB</span><h1>Big ideas.<br><span class="accent">Visible algorithms.</span></h1>
     <p class="byline">Made by <strong>Team 8PM</strong></p>
-    <p class="desc">Four algorithm-focused projects with interactive web visualizers, step-by-step animations, and empirical benchmarks.</p>
+    <p class="desc">Four interactive projects that turn complex algorithms into something you can see, explore, and understand.</p>
     <div class="hero-buttons">
       <a class="btn-primary" href="#projects">Explore Projects →</a>
-      <a class="btn-outline" href="https://github.com" target="_blank">
+      <a class="btn-outline" href="https://github.com/ryna66/DSA" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
         View on GitHub
       </a>
     </div>
   </div>
-  <div class="stats-box">
+  <div class="hero-lab-label" aria-hidden="true"><span>DSA / IN MOTION</span><span>SEARCH · DISCOVER · OPTIMIZE</span></div><div class="stats-box">
     <div class="stat">
       <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
       <div class="val">4</div>
@@ -159,103 +160,45 @@ body{font-family:'Inter',-apple-system,'Segoe UI',system-ui,sans-serif;backgroun
 <section class="projects-section" id="projects">
   <div class="projects-header">
     <div>
-      <h2>Featured Projects</h2>
-      <p>Explore interactive visualizers for classic DSA problems.</p>
+      <span class="eyebrow">THE PROJECT COLLECTION</span><h2>Four problems. Four ways to think.</h2>
+      <p>Explore the problem, understand the approach, then watch the algorithm work.</p>
     </div>
     <div class="search-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      <input type="text" placeholder="Search projects..." id="search" oninput="filterCards(this.value)">
+      <input type="text" placeholder="Search projects..." id="search" aria-label="Search projects" oninput="filterCards(this.value)">
     </div>
   </div>
 
-  <div class="cards" id="card-grid">
-    <!-- Card 1 -->
-    <div class="card" data-terms="maze solver keys doors bfs dfs dijkstra astar bitmask python">
-      <span class="card-num">01</span>
-      <div class="card-title-row">
-        <span class="card-icon">🔑</span>
-        <h3>Maze Solver with Keys &amp; Doors</h3>
-      </div>
-      <p class="card-desc">Navigate grid mazes collecting keys to unlock doors. Compare BFS, DFS, Dijkstra, and A* with animated step-by-step search playback.</p>
-      <div class="tags">
-        <span class="tag tag-blue">BFS</span>
-        <span class="tag tag-blue">A*</span>
-        <span class="tag tag-blue">Bitmask DP</span>
-        <span class="tag tag-green">Python</span>
-      </div>
-      <div class="card-actions">
-        <a class="view-link" href="/q1/">View Details →</a>
-        <a class="launch-btn" href="/q1/">▶ Launch</a>
-      </div>
-    </div>
-
-    <!-- Card 2 -->
-    <div class="card" data-terms="closest pair points divide conquer brute force ologn python">
-      <span class="card-num">02</span>
-      <div class="card-title-row">
-        <span class="card-icon">📍</span>
-        <h3>Closest Pair of Points</h3>
-      </div>
-      <p class="card-desc">Find the nearest pair in 2D. Visualize recursive splitting, strip regions, and watch Divide &amp; Conquer beat Brute-Force by 60×.</p>
-      <div class="tags">
-        <span class="tag tag-blue">Divide &amp; Conquer</span>
-        <span class="tag tag-blue">O(n log n)</span>
-        <span class="tag tag-green">Python</span>
-      </div>
-      <div class="card-actions">
-        <a class="view-link" href="/q2/">View Details →</a>
-        <a class="launch-btn" href="/q2/">▶ Launch</a>
-      </div>
-    </div>
-
-    <!-- Card 3 -->
-    <div class="card" data-terms="cheapest flights coupons layered dp bellman ford shortest path python">
-      <span class="card-num">03</span>
-      <div class="card-title-row">
-        <span class="card-icon">✈️</span>
-        <h3>Cheapest Flights with Coupons</h3>
-      </div>
-      <p class="card-desc">Shortest path from city 1 to N with stop limits and half-price coupons. Animated airplane journey with live cost tracking.</p>
-      <div class="tags">
-        <span class="tag tag-orange">Layered DP</span>
-        <span class="tag tag-orange">Bellman-Ford</span>
-        <span class="tag tag-green">Python</span>
-      </div>
-      <div class="card-actions">
-        <a class="view-link" href="/q3/">View Details →</a>
-        <a class="launch-btn" href="/q3/">▶ Launch</a>
-      </div>
-    </div>
-
-    <!-- Card 4 -->
-    <div class="card" data-terms="exam scheduling graph colouring branch bound dsatur java python">
-      <span class="card-num">04</span>
-      <div class="card-title-row">
-        <span class="card-icon">📅</span>
-        <h3>Exam Scheduling</h3>
-      </div>
-      <p class="card-desc">Capacitated graph colouring for exam timetabling. DSatur greedy vs exact Branch &amp; Bound with optimality certification.</p>
-      <div class="tags">
-        <span class="tag tag-pink">Graph Colouring</span>
-        <span class="tag tag-pink">Branch &amp; Bound</span>
-        <span class="tag tag-red">Java → Python</span>
-      </div>
-      <div class="card-actions">
-        <a class="view-link" href="/q4/">View Details →</a>
-        <a class="launch-btn" href="/q4/">▶ Launch</a>
-      </div>
-    </div>
-  </div>
+  <div class="cards" id="card-grid"><article class="card project-card project-01" data-terms="maze keys doors bfs dfs dijkstra a* astar bitmask python search">
+ <div class="project-top"><span class="card-num">PROJECT 01</span><span class="project-kind">SEARCH · STATE SPACES</span></div>
+ <h3>Maze Solver with Keys &amp; Doors</h3><p class="project-headline">Find a way out. Remember what you collect.</p><p class="card-desc">A maze is more than a grid when a locked door changes where you can go. Explore how a search tracks both your position and the keys in your inventory.</p>
+ <div class="algorithm-strip" aria-hidden="true"><span>S → key → door → E</span><small>State = position + inventory</small></div>
+ <dl class="project-details"><div><dt>01 / INPUT</dt><dd>A square maze with walls, a start, an exit, and up to six key types. Type it, import CSV, or generate a maze.</dd></div><div><dt>02 / APPROACH</dt><dd>BFS, DFS, Dijkstra, and A* explore position + key-bitmask states. BFS, Dijkstra, and A* find shortest routes; DFS may take a longer one.</dd></div><div><dt>03 / EXPLORE</dt><dd>Replay the frontier, rejected moves, key pickups, and final route. Scrub backward or export the marked path.</dd></div></dl>
+ <div class="tags"><span class="tag tag-blue">BFS / DFS</span><span class="tag tag-blue">Dijkstra / A*</span><span class="tag tag-blue">Key bitmasks</span></div>
+ <div class="card-actions"><a class="view-link" href="https://github.com/ryna66/DSA/tree/main/question1" target="_blank" rel="noopener noreferrer">Read documentation ↗</a><a class="launch-btn" href="/q1/">Launch project →</a></div></article>
+<article class="card project-card project-02" data-terms="closest pair points geometry divide conquer brute force python">
+ <div class="project-top"><span class="card-num">PROJECT 02</span><span class="project-kind">GEOMETRY · DIVIDE &amp; CONQUER</span></div>
+ <h3>Closest Pair of Points</h3><p class="project-headline">Find the closest two in a crowd.</p><p class="card-desc">Compare checking every pair with an approach that splits the plane, solves smaller problems, and checks a narrow strip between them.</p>
+ <div class="algorithm-strip" aria-hidden="true"><span>Split → solve → merge</span><small>Two approaches. One minimum distance.</small></div>
+ <dl class="project-details"><div><dt>01 / INPUT</dt><dd>A set of 2D points, entered manually, imported from CSV, or generated for an experiment.</dd></div><div><dt>02 / APPROACH</dt><dd>Compare O(n²) brute force with O(n log n) divide and conquer. Sorted strip checks catch pairs that cross the split.</dd></div><div><dt>03 / EXPLORE</dt><dd>Watch recursive partitions and candidate comparisons. See the nearest pair and distance, then compare measured running times.</dd></div></dl>
+ <div class="tags"><span class="tag tag-blue">Divide &amp; conquer</span><span class="tag tag-blue">O(n log n)</span><span class="tag tag-blue">Brute-force baseline</span></div>
+ <div class="card-actions"><a class="view-link" href="https://github.com/ryna66/DSA/tree/main/question2" target="_blank" rel="noopener noreferrer">Read documentation ↗</a><a class="launch-btn" href="/q2/">Launch project →</a></div></article>
+<article class="card project-card project-03" data-terms="cheapest flights coupons layered dp bellman ford shortest path python">
+ <div class="project-top"><span class="card-num">PROJECT 03</span><span class="project-kind">GRAPHS · DYNAMIC PROGRAMMING</span></div>
+ <h3>Cheapest Flights with Coupons</h3><p class="project-headline">A smarter route for a smaller fare.</p><p class="card-desc">The cheapest journey depends on where you fly, how many stops you make, and when you spend a discount coupon.</p>
+ <div class="algorithm-strip" aria-hidden="true"><span>City × flights × coupons</span><small>Optimize the route and the discounts.</small></div>
+ <dl class="project-details"><div><dt>01 / INPUT</dt><dd>A directed flight network, a maximum number of intermediate stops, and a budget of half-price coupons.</dd></div><div><dt>02 / APPROACH</dt><dd>Layered dynamic programming tracks city, flights taken, and coupons used. Each flight can be paid in full or discounted once, rounding down.</dd></div><div><dt>03 / EXPLORE</dt><dd>Follow the aircraft along the chosen route. Inspect ticket costs, coupon usage, running totals, and export the itinerary as CSV.</dd></div></dl>
+ <div class="tags"><span class="tag tag-blue">Layered DP</span><span class="tag tag-blue">Stop constraints</span><span class="tag tag-blue">Coupon decisions</span></div>
+ <div class="card-actions"><a class="view-link" href="https://github.com/ryna66/DSA/tree/main/question3" target="_blank" rel="noopener noreferrer">Read documentation ↗</a><a class="launch-btn" href="/q3/">Launch project →</a></div></article>
+<article class="card project-card project-04" data-terms="exam scheduling graph coloring colouring branch bound dsatur java python timetable">
+ <div class="project-top"><span class="card-num">PROJECT 04</span><span class="project-kind">OPTIMIZATION · GRAPH COLORING</span></div>
+ <h3>Exam Scheduling</h3><p class="project-headline">Fewer slots. No exam clashes.</p><p class="card-desc">Turn shared-student conflicts into a graph and build a timetable that respects both course conflicts and the number of available halls.</p>
+ <div class="algorithm-strip" aria-hidden="true"><span>Conflicts → colors → timetable</span><small>One color per slot. One exam per hall.</small></div>
+ <dl class="project-details"><div><dt>01 / INPUT</dt><dd>Courses, pairs that cannot run together, and the maximum number of exams allowed in a time slot.</dd></div><div><dt>02 / APPROACH</dt><dd>Capacity-aware DSatur builds a greedy schedule. Exact branch and bound searches for improvements and reports whether optimality is proven within its time budget.</dd></div><div><dt>03 / EXPLORE</dt><dd>Watch courses receive slots, compare greedy and exact schedules, inspect the conflict graph, and download a hall-by-hall CSV timetable.</dd></div></dl>
+ <div class="tags"><span class="tag tag-blue">DSatur greedy</span><span class="tag tag-blue">Branch &amp; bound</span><span class="tag tag-blue">Hall capacity</span></div>
+ <div class="card-actions"><a class="view-link" href="https://github.com/ryna66/DSA/tree/main/question4" target="_blank" rel="noopener noreferrer">Read documentation ↗</a><a class="launch-btn" href="/q4/">Launch project →</a></div></article></div><p id="empty-search" role="status" hidden>No projects match your search. Try “graph”, “maze”, or “coupons”.</p>
 </section>
 
-<script>
-function filterCards(query) {
-  const q = query.toLowerCase();
-  document.querySelectorAll('.card').forEach(card => {
-    const terms = card.dataset.terms + ' ' + card.querySelector('h3').textContent.toLowerCase();
-    card.style.display = terms.includes(q) ? '' : 'none';
-  });
-}
-</script>
-</body>
-</html>
+<section class="team-teaser"><div><span class="eyebrow">MEET THE PEOPLE BEHIND THE PROJECTS</span><h2>Four curious minds. Team 8PM.</h2><p>Get to know the CSE team behind this collection.</p></div><a class="btn-primary" href="/about.html">Meet the team ↗</a></section>
+</main><footer>Team 8PM <span>Four projects. A shared curiosity for algorithms.</span><a href="https://github.com/ryna66/DSA" target="_blank" rel="noopener noreferrer">Explore the source ↗</a></footer>
+<script src="/site.js"></script></body></html>

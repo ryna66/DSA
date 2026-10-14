@@ -283,7 +283,7 @@ async function solveMaze(autoplay = true) {
     succeeded = true;
   } catch (error) { setStatus(error.message, "error"); }
   finally { setBusy(false); updateControls(); }
-  if (succeeded && autoplay && !matchMedia("(prefers-reduced-motion: reduce)").matches) play();
+  if (succeeded && autoplay) DemoUX.present({ play, finish: () => goTo(playback.total) });
 }
 async function generateMaze() {
   if (busy) return;
@@ -398,4 +398,5 @@ async function init() {
     setStatus(`${error.message} Start the app with python3 app.py, then reload.`, "error");
   } finally { setBusy(false); }
 }
+DemoUX.mount({ target: ".visualizer", input: ".setup-panel", last: "skip-forward", play: "play-button" });
 init();

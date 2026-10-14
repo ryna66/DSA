@@ -22,7 +22,7 @@ function setBusy(value) {
 function number(id, min, max) { const raw = $(id).value.trim(), n = Number(raw); if (!raw || !Number.isSafeInteger(n) || n < min || n > max) throw new Error(`${id}: enter an integer from ${min} to ${max}.`); return n; }
 async function api(endpoint, payload) {
   const response = await fetch(`/api/q4/${endpoint}`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" }, body: new URLSearchParams(payload) });
-  const data = await response.json(); if (!response.ok) throw new Error(data.error || "Request failed."); return data;
+  const data = await response.json().catch(() => ({error: "The scheduling service could not complete the request. Please try again."})); if (!response.ok) throw new Error(data.error || "Request failed."); return data;
 }
 function install(data) {
   graph = data; results = null; cursor = 0; dirty = false; pause();
@@ -40,7 +40,7 @@ function controls() {
   $("frame-label").textContent = `${cursor} / ${total} courses`;
   $("percent").textContent = `${total ? Math.round(cursor / total * 100) : 0}%`;
   $("download").disabled = busy || !results;
-  for (const key of ["greedy","exact"]) { $("view-"+key).setAttribute("aria-pressed", selected === key); $("view-"+key).disabled = busy; }
+  for (const key of ["greedy","exact"]) { $("view-"+key).setAttribute("aria-pressed", selected === key); $("view-"+key).disabled = busy; $("replay-"+key).disabled = busy || !results; $("replay-"+key).setAttribute("aria-pressed",selected===key); }
 }
 function renderCards() {
   for (const key of ["greedy","exact"]) {
@@ -53,6 +53,7 @@ function renderCards() {
 }
 function render() {
   const result = active(), events = result?.events.slice(0,cursor) || [], current = events.at(-1);
+  $("schedule-summary").textContent = !result ? "Build a timetable to compare the approaches." : `${selected === 'greedy' ? 'DSatur greedy' : 'Exact branch & bound'} · ${result.slots} slots · ${result.optimal ? 'minimum proved' : 'valid schedule; optimality not proved'}. ${cursor} of ${graph.n} courses placed.`;
   const assignment = Array(graph?.n || 0).fill(0); events.forEach(e => { assignment[e.course-1] = e.slot; });
   renderGraph(assignment, current); renderTable(assignment);
   $("graph-badge").textContent = graph ? `${graph.n} COURSES · ${graph.edges.length} CONFLICTS` : "NO GRAPH";
@@ -102,13 +103,14 @@ function renderTable(assignment) {
   }
   if(!result.slots){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=graph.halls+1;td.textContent="No exams to schedule.";tr.append(td);body.append(tr);}
 }
-async function solve() {
-  if(busy)return;pause();setBusy(true);status("Java is building the greedy timetable and searching for a proven minimum…");
+async function solve(present = true) {
+  if(busy)return;pause();setBusy(true);let succeeded=false;status("Building the greedy timetable and searching for a proven minimum…");
   try{
     const data=await api("solve",{n:number("n",0,60),halls:number("halls",1,20),edges:$("edges").value,budget:number("budget",0,60000)});
-    graph=data.graph;results=data;dirty=false;cursor=active().events.length;renderCards();render();
-    status(data.exact.optimal?`Exact minimum proved: ${data.exact.slots} slots. Select an algorithm and press Play.`:`Time limit reached. Best found: ${data.exact.slots} slots; lower bound: ${data.exact.lowerBound}. Optimality is not proved.`);
+    graph=data.graph;results=data;dirty=false;cursor=present===false?active().events.length:0;succeeded=true;renderCards();render();
+    status(data.exact.optimal?`Exact minimum proved: ${data.exact.slots} slots. Watch the courses move into their time slots below.`:`Time limit reached. Best found: ${data.exact.slots} slots; lower bound: ${data.exact.lowerBound}. Optimality is not proved.`);
   }catch(error){status(error.message,true);}finally{setBusy(false);}
+  if(succeeded && present!==false) DemoUX.present({play,finish:()=>seek(active().events.length)});
 }
 async function generate(){
   if(busy)return;pause();setBusy(true);let success=false;
@@ -140,10 +142,12 @@ async function benchmark(){
 $("solve").addEventListener("click",solve);$("generate").addEventListener("click",generate);
 for(const id of["n","halls","edges"])$(id).addEventListener("input",inputChanged);
 $("example").addEventListener("change",async e=>{if(!e.target.value)return;install(examples[e.target.value]);await solve();});
-for(const key of["greedy","exact"])$("view-"+key).addEventListener("click",()=>{pause();selected=key;cursor=active()?.events.length||0;render();});
+for(const key of["greedy","exact"])$("view-"+key).addEventListener("click",()=>{pause();selected=key;cursor=0;render();if(active())DemoUX.present({play,finish:()=>seek(active().events.length)});});
+for(const key of ["greedy","exact"])$("replay-"+key).addEventListener("click",()=>$("view-"+key).click());
 $("play").addEventListener("click",play);$("first").addEventListener("click",()=>seek(0));$("back").addEventListener("click",()=>seek(cursor-1));$("next").addEventListener("click",()=>seek(cursor+1));$("last").addEventListener("click",()=>seek(active().events.length));$("timeline").addEventListener("input",e=>seek(Number(e.target.value)));$("speed").addEventListener("input",()=>{$("speed-value").textContent=`${$("speed").value} / sec`;});
 $("download").addEventListener("click",()=>{if(active())download(active().csv,`${selected}_timetable.csv`);});
 $("benchmark-run").addEventListener("click",benchmark);
 $("download-benchmark").addEventListener("click",()=>{if(!measurements.length)return;const header="N,conflicts,R,density,seed,exact_budget_ms,greedy_slots,exact_slots,greedy_ms,exact_ms,greedy_optimal,exact_optimal,exact_lower_bound,timed_out\n";download(header+measurements.map(row=>[row.n,row.edges,measurementMeta.halls,measurementMeta.density,measurementMeta.seed+row.n*31,measurementMeta.budget,row.greedy.slots,row.exact.slots,row.greedy.timeMs.toFixed(6),row.exact.timeMs.toFixed(6),row.greedy.optimal,row.exact.optimal,row.exact.lowerBound,row.exact.timedOut].join(",")).join("\n")+"\n","timetable_comparison.csv");});
 $("help-button").addEventListener("click",()=>$("help").showModal());$("close-help").addEventListener("click",()=>$("help").close());document.addEventListener("visibilitychange",()=>{if(document.hidden)pause();});
-install(examples.improvement);$("example").value="improvement";renderBenchmarks();solve();
+DemoUX.mount({ target: ".graph-panel", input: ".setup", last: "last", play: "play" });
+install(examples.improvement);$("example").value="improvement";renderBenchmarks();solve(false);

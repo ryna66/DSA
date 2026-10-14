@@ -194,15 +194,16 @@ function render() {
   });
   controls();
 }
-async function solveGraph() {
+async function solveGraph(present = true) {
   if (busy) return;
-  stop(); setBusy(true); status("Finding the cheapest route within your limits…");
+  stop(); setBusy(true); let succeeded = false; status("Finding the cheapest route within your limits…");
   try {
     const data = await api("solve", { ...settings(), text: $("flight-input").value });
-    install(data); result = data; render();
-    status(data.cost < 0 ? "No route fits the stop limit (−1)." : `Minimum cost: ${format(data.cost)}. Press Play to take the journey.`, data.cost < 0);
+    install(data); result = data; render(); succeeded = true;
+    status(data.cost < 0 ? "No route fits the stop limit (−1)." : `Minimum cost: ${format(data.cost)}. Your journey starts below. Pause or skip to the destination at any time.`, data.cost < 0);
   } catch (error) { status(error.message, true); }
   finally { setBusy(false); }
+  if (succeeded && present !== false) DemoUX.present({ play, finish: () => seek(result.path.length) });
 }
 async function generateGraph() {
   if (busy) return;
@@ -280,6 +281,7 @@ async function init() {
     install(examples[0]); $("examples").value = "0"; success = true;
   } catch (error) { render(); status(`${error.message} Start python3 question3/app.py, then reload.`, true); }
   finally { setBusy(false); }
-  if (success) await solveGraph();
+  if (success) await solveGraph(false);
 }
+DemoUX.mount({ target: ".map-panel", input: ".setup", last: "last", play: "play" });
 render(); init();

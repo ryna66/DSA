@@ -3,6 +3,8 @@ const $ = (id) => document.getElementById(id);
 const svgNS = "http://www.w3.org/2000/svg";
 let points = [], result = null, cursor = 0, timer = null, busy = false, measuring = false;
 let measurements = [], bounds = null, benchmarkMeta = null;
+let comparisonProgress = [], pointRanks = [];
+const guidedPoints = [[-9,-4],[-7,4],[-5,-1],[-3,6],[-1,-5],[-.15,.2],[.15,.35],[1,-4],[3,5],[5,0],[7,-3],[9,6]];
 const W = 800, H = 490, area = { left: 60, right: 770, top: 25, bottom: 440 };
 
 function svg(name, attrs = {}, text) {
@@ -19,9 +21,10 @@ function coord(value) { return Math.abs(value) >= 1e6 || (value !== 0 && Math.ab
 function status(message, error = false) { $("status").textContent = message; $("status").classList.toggle("error", error); }
 function setBusy(value) {
   busy = value;
-  for (const id of ["point-count", "seed", "distribution", "generate-button", "solve-button", "manual-button", "apply-points"]) $(id).disabled = value;
+  for (const id of ["point-count", "seed", "distribution", "generate-button", "solve-button", "manual-button", "apply-points", "guided-demo"]) $(id).disabled = value;
   $("benchmark-button").disabled = value || measuring;
   updateControls();
+  if (document.getElementById("lesson-title")) renderLesson(cursor > 0 ? result?.events[cursor-1] : null);
 }
 async function api(endpoint, payload) {
   const response = await fetch(`/api/q2/${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
@@ -88,10 +91,12 @@ function render() {
   const plot = $("point-plot"); plot.replaceChildren();
   const project = scale(); drawAxes(plot, project);
   const event = cursor > 0 ? result.events[cursor - 1] : null;
+  renderLesson(event);
   const active = event ? new Set(result.order.slice(event.lo, event.hi)) : null;
   const defs = svg("defs"); const clip = svg("clipPath", { id: "plane-clip" });
   clip.append(svg("rect", { x: area.left, y: area.top, width: area.right - area.left, height: area.bottom - area.top })); defs.append(clip); plot.append(defs);
   const region = svg("g", { "clip-path": "url(#plane-clip)" }); plot.append(region);
+  drawRegion(region, event, project);
   if (event?.strip_d !== undefined) {
     const left = Math.max(area.left, project.x(event.split_x - event.strip_d));
     const right = Math.min(area.right, project.x(event.split_x + event.strip_d));
@@ -105,24 +110,29 @@ function render() {
   if (event?.best && $("show-divide").checked) pairLine(region, event.best, project, cursor === result.events.length ? "pair-divide" : "pair-local");
   if (event?.checking) pairLine(region, event.checking, project, "pair-check");
   points.forEach(([x, y], id) => {
-    const circle = svg("circle", { cx: project.x(x), cy: project.y(y), r: points.length > 400 ? 2.4 : 4,
+    const circle = svg("circle", { cx: project.x(x), cy: project.y(y), r: points.length > 400 ? 2.4 : points.length <= 24 ? 6 : 4,
       class: `point ${active ? active.has(id) ? "active" : "faded" : ""} ${event?.checking?.includes(id) ? "comparing" : ""}` });
+    if (active?.has(id) && event?.split_x !== undefined && !event?.checking?.includes(id)) {
+      const rank = pointRanks[id], mid = event.mid ?? Math.floor((event.lo + event.hi) / 2);
+      circle.style.fill = rank < mid ? "#4169d1" : "#189d95";
+    }
     circle.append(svg("title", {}, `P${id + 1}: (${x}, ${y})`)); region.append(circle);
-    if (points.length <= 12) region.append(svg("text", { x: project.x(x) + 8, y: project.y(y) - 7, class: "axis-text" }, `P${id + 1}`));
+    if (points.length <= 24) region.append(svg("text", { x: project.x(x) + 8, y: project.y(y) - 7, class: "axis-text" }, `P${id + 1}`));
   });
   if (result && $("show-brute").checked) pairRings(region, result.brute.pair, project, "brute", 9);
   if (event?.best && $("show-divide").checked) pairRings(region, event.best, project, "divide", 5.5);
   if (!points.length) plot.append(svg("text", { x: 415, y: 245, "text-anchor": "middle", fill: "#a0aec3", "font-size": 15 }, "No points yet. Click the plane to add one."));
+  drawMeasurement(region, event, project);
   const descriptions = {
     split: "Split the x-sorted points into two balanced halves.", base: "Three or fewer points: compare each pair directly.",
     compare: event?.strip_d !== undefined ? "Check nearby points in the strip, in y order." : "Check a pair in this small subproblem.",
     strip: "Merge the halves. Search within distance d of the dividing line.", merge: "Return this region’s closest pair to its parent.",
-    complete: "Recursion complete. Both algorithms’ final pairs are highlighted.", duplicate: "Duplicate coordinates found. Zero is the smallest possible distance.",
+    complete: "Recursion complete. The closest pair is highlighted; enable the brute-force reference to compare.", duplicate: "Duplicate coordinates found. Zero is the smallest possible distance.",
     insufficient: "Fewer than two points: no closest pair or minimum distance exists.",
   };
   $("phase").textContent = event ? event.kind.toUpperCase() : "READY";
   $("phase-description").textContent = event ? descriptions[event.kind] : "Animate divide-and-conquer to see every split and merge.";
-  $("event-description").textContent = event ? descriptions[event.kind] + (event.checking ? ` Comparing P${event.checking[0] + 1} and P${event.checking[1] + 1}.` : "") : "Press Play to animate divide-and-conquer. The orange pair is the brute-force reference.";
+  $("event-description").textContent = event ? descriptions[event.kind] + (event.checking ? ` Comparing P${event.checking[0] + 1} and P${event.checking[1] + 1}.` : "") : "Start playback or choose a stage above to follow the decisions.";
   $("depth").textContent = event?.depth ?? "—";
   $("region-size").textContent = event ? event.hi - event.lo : "—";
   $("local-distance").textContent = fmt(event?.distance);
@@ -143,17 +153,21 @@ function renderResults() {
     else pair.textContent = data ? "At least two points are required." : name === "brute" ? "Every possible pair is checked." : "Split, solve, and check the strip.";
   }
 }
-async function solvePoints() {
+async function solvePoints(present = true) {
   if (busy) return;
-  pause(); setBusy(true); status("Computing both algorithms and recording the recursion…");
+  pause(); setBusy(true); let succeeded = false; status("Computing both algorithms and recording the recursion…");
   try {
-    result = await api("solve", { points }); cursor = result.events.length;
+    result = await api("solve", { points });
+    pointRanks = []; result.order.forEach((id, rank) => { pointRanks[id] = rank; });
+    let checked = 0; comparisonProgress = result.events.map(event => checked += event.kind === "compare" ? 1 : 0);
+    cursor = present === false ? result.events.length : 0; succeeded = true;
     renderResults(); render();
-    status(result.agree ? "Results agree. Press Play to explore the recursion." : "The algorithms disagree. Inspect the result before using it.", !result.agree);
+    status(result.agree ? "Results agree. Follow the guided steps below, or jump to the final pair." : "The algorithms disagree. Inspect the result before using it.", !result.agree);
   } catch (error) { status(error.message, true); }
   finally { setBusy(false); }
+  if (succeeded && present !== false) DemoUX.present({ play, finish: () => seek(result.events.length) });
 }
-async function generate() {
+async function generate(present = true) {
   if (busy) return;
   const n = Number($("point-count").value), seed = Number($("seed").value);
   if (!$("point-count").value.trim() || !Number.isInteger(n) || n < 0 || n > 2000 || !$("seed").value.trim() || !Number.isSafeInteger(seed)) { status("Use integer N from 0–2000 and a whole-number seed.", true); return; }
@@ -163,19 +177,19 @@ async function generate() {
     setPoints(data.points); succeeded = true;
   } catch (error) { status(error.message, true); }
   finally { setBusy(false); }
-  if (succeeded) await solvePoints();
+  if (succeeded) await solvePoints(present);
 }
 function seek(frame) {
   if (!result || busy) return;
   pause(); cursor = Math.min(result.events.length, Math.max(0, frame)); render();
 }
 function play() {
-  if (!result || busy) return;
+  if (!result?.events.length || busy) return;
   if (timer) { pause(); return; }
   if (cursor === result.events.length) { cursor = 0; render(); }
   $("play").textContent = "Ⅱ Pause";
-  const tick = () => { cursor++; render(); if (cursor >= result.events.length) pause(); else timer = setTimeout(tick, 1000 / Number($("speed").value)); };
-  timer = setTimeout(tick, 1000 / Number($("speed").value));
+  const tick = () => { cursor++; render(); if (cursor >= result.events.length) pause(); else timer = setTimeout(tick, frameDelay()); };
+  timer = setTimeout(tick, frameDelay());
 }
 function download(text, filename, mime = "text/csv") {
   const url = URL.createObjectURL(new Blob([text], { type: mime }));
@@ -227,6 +241,91 @@ async function runBenchmark() {
   finally { measuring = false; setBusy(false); $("benchmark-button").disabled = false; $("sizes").disabled = false; $("repeats").disabled = false; }
 }
 
+
+function frameDelay() {
+  const event = result?.events[Math.max(0, cursor - 1)];
+  const dwell = event?.kind === "compare" ? 700 : event?.kind === "split" || event?.kind === "strip" ? 1400 : 1000;
+  return dwell / Number($("speed").value);
+}
+function drawRegion(plot, event, project) {
+  if (!event || !result || event.hi <= event.lo) return;
+  const ids = result.order.slice(event.lo, event.hi);
+  const xs = ids.map(id => project.x(points[id][0]));
+  const left = Math.max(area.left, Math.min(...xs) - 22), right = Math.min(area.right, Math.max(...xs) + 22);
+  const split = event.split_x !== undefined ? Math.max(left, Math.min(right, project.x(event.split_x))) : null;
+  if (split !== null) {
+    plot.append(svg("rect", {x:left,y:area.top,width:split-left,height:area.bottom-area.top,fill:"#4169d1",opacity:.07}));
+    plot.append(svg("rect", {x:split,y:area.top,width:right-split,height:area.bottom-area.top,fill:"#189d95",opacity:.08}));
+    if (right-left > 160) {
+      plot.append(svg("text",{x:(left+split)/2,y:area.top+35,"text-anchor":"middle",class:"region-label",fill:"#4169d1"},"LEFT HALF"));
+      plot.append(svg("text",{x:(right+split)/2,y:area.top+35,"text-anchor":"middle",class:"region-label",fill:"#16867f"},"RIGHT HALF"));
+    }
+  } else if (event.kind !== 'complete' && event.kind !== 'duplicate') {
+    plot.append(svg("rect",{x:left,y:area.top,width:right-left,height:area.bottom-area.top,rx:8,fill:"#ecf2ff",stroke:"#b9cbf1","stroke-dasharray":"5 5"}));
+  }
+}
+function drawMeasurement(plot, event, project) {
+  const pair = event?.checking || ((event?.kind === 'complete' || event?.kind === 'duplicate') ? event.best : null);
+  if (!pair) return;
+  const [a,b] = pair.map(id => points[id]);
+  const ax=project.x(a[0]), ay=project.y(a[1]), bx=project.x(b[0]), by=project.y(b[1]);
+  plot.append(svg("path",{d:`M${ax} ${ay}H${bx}V${by}`,fill:"none",stroke:"#9f83d6","stroke-width":1.5,"stroke-dasharray":"4 4"}));
+  const distance = Math.hypot(a[0]-b[0],a[1]-b[1]);
+  const x = Math.max(area.left+64, Math.min(area.right-64,(ax+bx)/2)), y=Math.max(area.top+56,Math.min(area.bottom-25,(ay+by)/2-22));
+  plot.append(svg("rect",{x:x-62,y:y-16,width:124,height:27,rx:7,fill:"#24385c"}));
+  plot.append(svg("text",{x,y:y+2,"text-anchor":"middle",fill:"white","font-size":12,"font-weight":650},`distance = ${fmt(distance,3)}`));
+}
+function renderLesson(event) {
+  const kind = event?.kind;
+  const count = event ? event.hi-event.lo : points.length;
+  const mid = event ? event.mid ?? Math.floor((event.lo+event.hi)/2) : 0;
+  let stage = kind === 'split' ? 'split' : ['base','compare'].includes(kind) && event.strip_d === undefined ? 'compare' : ['strip','merge','compare'].includes(kind) ? 'strip' : 'complete';
+  if (!event) stage = '';
+  const copy = {
+    split: [`Split ${count} points into two smaller problems.`, `The blue half contains ${mid-(event?.lo ?? 0)} points; the teal half contains ${(event?.hi ?? 0)-mid}. We solve each half before looking across the dividing line. Equal x coordinates are split by sorted rank.`],
+    base: [`Just ${count} points: check every pair here.`, 'This region is small enough to solve directly. The other points fade out so you can focus on this recursive call.'],
+    compare: [event?.checking ? `Compare P${event.checking[0]+1} with P${event.checking[1]+1}.` : 'Compare the next pair.', event?.strip_d !== undefined ? 'These points are inside the central strip, checked in y order. Only nearby neighbors can improve the distance returned by the two halves.' : 'Measure the horizontal and vertical gaps, then use the Euclidean distance. Keep the shortest pair found within this small region.'],
+    strip: ['The answer might cross the dividing line.', `The halves returned a best distance d = ${fmt(event?.strip_d,3)}. Only points within d of the split can form a better cross-boundary pair; the shaded strip is 2d wide.`],
+    merge: [`Return the best pair from these ${count} points.`, 'This recursive call is complete. Its closest pair is passed to the parent call, where it is compared with the other half and the central strip.'],
+    complete: ['The closest pair is confirmed.', result?.divide.pair ? `P${result.divide.pair[0]+1} and P${result.divide.pair[1]+1} are ${fmt(result.divide.distance,4)} units apart. Divide-and-conquer checked ${result.divide.comparisons} pairs; brute force checked ${result.brute.comparisons}. Both found the same minimum distance.` : 'No pair is available.'],
+    duplicate: ['Two points share exactly the same position.', 'Their distance is zero. No smaller distance is possible, so the algorithm finishes immediately without splitting the plane.'],
+    insufficient: ['We need at least two points to make a pair.', 'Add a point to the plane or use the guided example. There is no distance to report yet.']
+  };
+  const [title,body] = copy[kind] || ['Every point has a possible neighbor.', 'Start with the whole set. Watch it split into smaller regions, compare nearby points, and combine the answers.'];
+  $('lesson-kicker').textContent = event ? `STEP ${cursor} OF ${result.events.length} · RECURSION DEPTH ${event.depth}` : 'FOLLOW THE DECISIONS, NOT JUST THE DOTS';
+  $('lesson-title').textContent=title; $('lesson-body').textContent=body;
+  const pair = event?.checking || event?.best;
+  $('checking-pair').textContent = pair ? `P${pair[0]+1} ↔ P${pair[1]+1}` : 'Choosing a region';
+  if (pair) {
+    const [a,b]=pair.map(id=>points[id]); const dx=Math.abs(a[0]-b[0]),dy=Math.abs(a[1]-b[1]);
+    $('distance-math').textContent=`√(${fmt(dx,2)}² + ${fmt(dy,2)}²) = ${fmt(Math.hypot(dx,dy),3)}`;
+  } else $('distance-math').textContent='d = √(Δx² + Δy²)';
+  $('checks-so-far').textContent=cursor ? comparisonProgress[cursor-1] : 0;
+  document.querySelectorAll('[data-stage]').forEach(button=>{
+    const wanted=button.dataset.stage;
+    const index=result?.events.findIndex(e=>wanted==='complete'?['complete','duplicate','insufficient'].includes(e.kind):e.kind===wanted)??-1;
+    button.disabled=busy||index<0; button.classList.toggle('current',wanted===stage);
+    if(wanted===stage)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current');
+  });
+  const track=$('sorted-points');track.replaceChildren();
+  const ids=result?.order || points.map((_,id)=>id).sort((a,b)=>points[a][0]-points[b][0]);
+  const shown=ids.length<=24?ids:(event?ids.slice(event.lo,Math.min(event.hi,event.lo+20)):ids.slice(0,20));
+  shown.forEach(id=>{
+    const rank=result?pointRanks[id]:ids.indexOf(id),chip=document.createElement('span');chip.textContent=`P${id+1}`;
+    chip.className=!event?'':rank<event.lo||rank>=event.hi?'outside':rank<mid?'half-left':'half-right';
+    if(event?.checking?.includes(id))chip.classList.add('checking');
+    chip.title=`(${coord(points[id][0])}, ${coord(points[id][1])})`;track.append(chip);
+  });
+  if(shown.length<ids.length){const note=document.createElement('small');note.textContent=`${shown.length} of ${ids.length} point IDs shown`;track.append(note);}
+}
+$('guided-demo').addEventListener('click',()=>{if(busy)return;setPoints(guidedPoints.map(p=>[...p]));$('show-brute').checked=false;$('speed').value='1';$('speed-value').textContent='1×';solvePoints();});
+document.querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>{
+  if(!result||busy)return;
+  const stage=button.dataset.stage;
+  const index=result.events.findIndex(e=>stage==='complete'?['complete','duplicate','insufficient'].includes(e.kind):e.kind===stage);
+  if(index>=0)seek(index+1);
+}));
+
 $("generate-button").addEventListener("click", generate);
 $("solve-button").addEventListener("click", solvePoints);
 $("play").addEventListener("click", play);
@@ -235,7 +334,7 @@ $("back").addEventListener("click", () => seek(cursor - 1));
 $("next").addEventListener("click", () => seek(cursor + 1));
 $("last").addEventListener("click", () => seek(result.events.length));
 $("timeline").addEventListener("input", e => seek(Number(e.target.value)));
-$("speed").addEventListener("input", () => { $("speed-value").textContent = `${$("speed").value} frames/s`; });
+$("speed").addEventListener("input", () => { $("speed-value").textContent = `${$("speed").value}×`; });
 for (const id of ["show-brute", "show-divide"]) $(id).addEventListener("change", render);
 $("point-plot").addEventListener("click", event => {
   if (busy || !bounds || points.length >= 2000) return;
@@ -269,4 +368,6 @@ $("download-benchmark").addEventListener("click", () => {
   download(header + measurements.map(r => [r.n,r.brute_ms.toFixed(6),r.divide_ms.toFixed(6),r.agree,benchmarkMeta.repeats,benchmarkMeta.seed].join(",")).join("\n") + "\n", "performance.csv");
 });
 document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
-renderBenchmark(); render(); generate();
+DemoUX.mount({ target: ".plane-panel", input: ".setup", last: "last", play: "play" });
+renderBenchmark(); render();
+setPoints(guidedPoints); solvePoints(false);

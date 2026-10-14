@@ -1,0 +1,109 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Meet Team 8PM: Harsh Kumar, Harsh Kumar, Ankit Singh, and Avnish Kumar. Four CSE members exploring algorithms through interactive projects."><title>About Team 8PM — DSA Hackathon</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f5f7fb;--white:#fff;--text:#1a1a2e;--muted:#64748b;--blue:#3b82f6;--blue-dark:#1e40af;--border:#e2e8f0;--card-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);--card-hover:0 10px 25px rgba(0,0,0,.08);--green:#10b981;--orange:#f59e0b;--pink:#ec4899;--red:#ef4444;--tag-blue-bg:#eff6ff;--tag-blue:#3b82f6;--tag-green-bg:#f0fdf4;--tag-green:#16a34a;--tag-orange-bg:#fffbeb;--tag-orange:#d97706;--tag-pink-bg:#fdf2f8;--tag-pink:#db2777;--tag-red-bg:#fef2f2;--tag-red:#dc2626}
+body{font-family:'Inter',-apple-system,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── Navbar ── */
+.navbar{display:flex;align-items:center;justify-content:space-between;padding:.875rem 2.5rem;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:1.1rem;text-decoration:none;color:var(--text)}
+.nav-brand svg{width:28px;height:28px}
+.nav-links{display:flex;gap:2rem;align-items:center}
+.nav-links a{text-decoration:none;color:var(--muted);font-size:.9rem;font-weight:500;padding:.25rem 0;border-bottom:2px solid transparent;transition:color .18s,background-color .18s,border-color .18s}
+.nav-links a.active{color:var(--blue);border-bottom-color:var(--blue)}
+.nav-links a:hover{color:var(--blue)}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.github-btn{display:flex;align-items:center;gap:.4rem;padding:.4rem 1rem;border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);font-size:.85rem;font-weight:500;background:var(--white);transition:color .18s,background-color .18s,border-color .18s}
+.github-btn:hover{border-color:var(--blue);color:var(--blue)}
+.github-btn svg{width:18px;height:18px}
+
+/* ── Hero ── */
+.hero{padding:3.5rem 2.5rem 3rem;max-width:1320px;margin:0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:3rem;flex-wrap:wrap}
+.hero-text{max-width:600px}
+.hero h1{font-size:3rem;font-weight:800;line-height:1.15;margin-bottom:.5rem}
+.hero h1 .accent{color:var(--blue)}
+.hero .byline{font-size:1rem;color:var(--muted);margin-bottom:1rem}
+.hero .byline strong{color:var(--blue);font-weight:600}
+.hero .desc{font-size:1.05rem;color:var(--muted);line-height:1.7;margin-bottom:1.75rem}
+.hero-buttons{display:flex;gap:1rem;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:.4rem;padding:.7rem 1.5rem;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:600;text-decoration:none;cursor:pointer;transition:background .2s}
+.btn-primary:hover{background:var(--blue-dark)}
+.btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.5rem;background:var(--white);color:var(--text);border:1px solid var(--border);border-radius:10px;font-size:.95rem;font-weight:500;text-decoration:none;cursor:pointer;transition:color .18s,background-color .18s,border-color .18s}
+.btn-outline:hover{border-color:var(--blue);color:var(--blue)}
+.btn-outline svg{width:20px;height:20px}
+
+/* ── Stats ── */
+.stats-box{display:flex;border:1px solid var(--border);border-radius:14px;background:var(--white);overflow:hidden;align-self:center}
+.stat{padding:1.25rem 1.75rem;text-align:center;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat-icon{margin-bottom:.4rem;color:var(--blue)}
+.stat-icon svg{width:24px;height:24px}
+.stat .val{font-size:1.6rem;font-weight:800;color:var(--text)}
+.stat .label{font-size:.75rem;color:var(--muted);margin-top:.1rem}
+
+/* ── Projects Section ── */
+.projects-section{padding:0 2.5rem 3rem;max-width:1320px;margin:0 auto}
+.projects-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.75rem;flex-wrap:wrap;gap:1rem}
+.projects-header h2{font-size:1.65rem;font-weight:700}
+.projects-header p{color:var(--muted);font-size:.95rem;margin-top:.25rem}
+.search-box{display:flex;align-items:center;gap:.5rem;padding:.55rem 1rem;border:1px solid var(--border);border-radius:10px;background:var(--white);min-width:220px}
+.search-box svg{width:18px;height:18px;color:var(--muted);flex-shrink:0}
+.search-box input{border:none;outline:none;font-size:.9rem;color:var(--text);width:100%;background:transparent}
+.search-box input::placeholder{color:#94a3b8}
+
+/* ── Cards Grid ── */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem}
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:1.5rem;display:flex;flex-direction:column;transition:border-color .18s;position:relative}
+.card:hover{box-shadow:var(--card-hover);transform:translateY(-2px)}
+.card-num{display:inline-block;font-size:.8rem;font-weight:700;padding:.15rem .55rem;border-radius:6px;margin-bottom:1rem;width:fit-content}
+.card:nth-child(1) .card-num{background:var(--tag-blue-bg);color:var(--tag-blue)}
+.card:nth-child(2) .card-num{background:var(--tag-green-bg);color:var(--tag-green)}
+.card:nth-child(3) .card-num{background:var(--tag-orange-bg);color:var(--tag-orange)}
+.card:nth-child(4) .card-num{background:var(--tag-pink-bg);color:var(--tag-pink)}
+.card-title-row{display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.75rem}
+.card-icon{font-size:1.6rem;flex-shrink:0;margin-top:.1rem}
+.card h3{font-size:1.05rem;font-weight:700;line-height:1.35}
+.card .card-desc{color:var(--muted);font-size:.85rem;line-height:1.65;margin-bottom:1rem;flex:1}
+.card .tags{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:1.25rem}
+.tag{padding:.2rem .55rem;border-radius:6px;font-size:.7rem;font-weight:600}
+.tag-blue{background:var(--tag-blue-bg);color:var(--tag-blue)}
+.tag-green{background:var(--tag-green-bg);color:var(--tag-green)}
+.tag-orange{background:var(--tag-orange-bg);color:var(--tag-orange)}
+.tag-pink{background:var(--tag-pink-bg);color:var(--tag-pink)}
+.tag-red{background:var(--tag-red-bg);color:var(--tag-red)}
+.card-actions{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:1rem;margin-top:auto}
+.card-actions a{text-decoration:none;font-size:.85rem;font-weight:600;display:inline-flex;align-items:center;gap:.3rem}
+.view-link{color:var(--blue)}
+.view-link:hover{text-decoration:underline}
+.launch-btn{color:var(--green);display:inline-flex;align-items:center;gap:.35rem}
+.launch-btn:hover{text-decoration:underline}
+
+/* ── Responsive ── */
+@media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){
+  .navbar{padding:.75rem 1.25rem}.nav-links{display:none}
+  .hero{padding:2rem 1.25rem;flex-direction:column}.hero h1{font-size:2.2rem}
+  .stats-box{width:100%;justify-content:center}.stat{padding:1rem 1.25rem}
+  .projects-section{padding:0 1.25rem 2rem}
+  .cards{grid-template-columns:1fr}
+  .projects-header{flex-direction:column}.search-box{width:100%}
+}
+</style><link rel="stylesheet" href="/site.css"></head><body class="about-page"><nav class="navbar">
+  <a class="nav-brand" href="/">
+    <svg viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="24" height="24" rx="6" fill="#3b82f6" opacity=".15"/><path d="M16 8l6 4v8l-6 4-6-4V12l6-4z" fill="#3b82f6"/><path d="M16 8v8l6-4" fill="#2563eb"/><path d="M16 16v8l6-4v-8" fill="#1d4ed8" opacity=".7"/></svg>
+    DSA <span style="font-weight:800">Hackathon</span>
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/#projects">Projects</a>
+    <a href="/about.html" class="active" aria-current="page">About</a>
+  </div>
+  <div class="nav-right">
+    <a class="github-btn" href="https://github.com/ryna66/DSA" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav><main>
+<section class="about-hero"><div class="beams-background" aria-hidden="true"><div class="beams-layer"></div></div><div class="ambient ambient-one" aria-hidden="true"></div><div class="ambient ambient-two" aria-hidden="true"></div><div class="about-intro"><span class="eyebrow"><span class="live-dot"></span> FOUR MEMBERS. ONE TEAM.</span><h1>Different minds.<br>Shared <span>curiosity.</span></h1><p>We are <strong>Team 8PM</strong> — four CSE members exploring how algorithms turn complex problems into clear, working solutions.</p><div class="hero-buttons"><a class="btn-primary" href="#team">Meet Team 8PM ↓</a><a class="btn-outline" href="/#projects">Explore our work ↗</a></div></div><div class="team-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="orbit-node node-one">HK</span><span class="orbit-node node-two">HK</span><span class="orbit-node node-three">AS</span><span class="orbit-node node-four">AK</span><div class="team-core"><small>TEAM</small><strong>8PM<span>.</span></strong><span class="core-caption">THINK · BUILD · EXPLORE</span></div><span class="art-label">CONNECTED BY CURIOSITY</span></div></section>
+<section class="members-section" id="team"><div class="aurora-background" aria-hidden="true"><div class="aurora-waves"></div><div class="aurora-grid"></div></div><div class="section-heading"><div><span class="eyebrow">THE PEOPLE BEHIND THE CODE</span><h2>Meet the team<span>.</span></h2></div><p>Four members, one shared space to<br>experiment, solve, and learn.</p></div><div class="members-grid"><a class="member member-1" href="https://github.com/HarshK2903/" target="_blank" rel="noopener noreferrer" aria-label="Harsh Kumar on GitHub, HarshK2903"><div class="member-top"><span>01</span><span class="profile-arrow">↗</span></div><div class="avatar"><span class="avatar-fallback" aria-hidden="true">HK</span><img src="/assets/team/HarshK2903.jpg" alt="Harsh Kumar’s GitHub avatar" width="110" height="110" loading="lazy" decoding="async"><span class="avatar-orbit" aria-hidden="true"></span></div><span class="member-degree">COMPUTER SCIENCE &amp; ENGINEERING</span><h2>Harsh Kumar</h2><p>CSE · Team 8PM</p><div class="member-handle">@HarshK2903<span>GitHub ↗</span></div></a><a class="member member-2" href="https://github.com/harsh1/" target="_blank" rel="noopener noreferrer" aria-label="Harsh Kumar on GitHub, harsh1"><div class="member-top"><span>02</span><span class="profile-arrow">↗</span></div><div class="avatar"><span class="avatar-fallback" aria-hidden="true">HK</span><img src="/assets/team/harsh1.jpg" alt="Harsh Kumar’s GitHub avatar" width="110" height="110" loading="lazy" decoding="async"><span class="avatar-orbit" aria-hidden="true"></span></div><span class="member-degree">COMPUTER SCIENCE &amp; ENGINEERING</span><h2>Harsh Kumar</h2><p>CSE · Team 8PM</p><div class="member-handle">@harsh1<span>GitHub ↗</span></div></a><a class="member member-3" href="https://github.com/biasankit/" target="_blank" rel="noopener noreferrer" aria-label="Ankit Singh on GitHub, biasankit"><div class="member-top"><span>03</span><span class="profile-arrow">↗</span></div><div class="avatar"><span class="avatar-fallback" aria-hidden="true">AS</span><img src="/assets/team/biasankit.jpg" alt="Ankit Singh’s GitHub avatar" width="110" height="110" loading="lazy" decoding="async"><span class="avatar-orbit" aria-hidden="true"></span></div><span class="member-degree">COMPUTER SCIENCE &amp; ENGINEERING</span><h2>Ankit Singh</h2><p>CSE · Team 8PM</p><div class="member-handle">@biasankit<span>GitHub ↗</span></div></a><a class="member member-4" href="https://github.com/ryna66/" target="_blank" rel="noopener noreferrer" aria-label="Avnish Kumar on GitHub, ryna66"><div class="member-top"><span>04</span><span class="profile-arrow">↗</span></div><div class="avatar"><span class="avatar-fallback" aria-hidden="true">AK</span><img src="/assets/team/ryna66.jpg" alt="Avnish Kumar’s GitHub avatar" width="110" height="110" loading="lazy" decoding="async"><span class="avatar-orbit" aria-hidden="true"></span></div><span class="member-degree">COMPUTER SCIENCE &amp; ENGINEERING</span><h2>Avnish Kumar</h2><p>CSE · Team 8PM</p><div class="member-handle">@ryna66<span>GitHub ↗</span></div></a></div></section>
+<section class="team-manifesto"><span class="eyebrow">WHAT BRINGS US TOGETHER</span><h2>Make the logic visible.<br><span>Make the learning hands-on.</span></h2><p>From finding a path through a locked maze to building a clash-free exam timetable, our projects let you follow the decisions behind the answer. Change an input. Step through the process. See why it works.</p><div class="principles"><div><span>01</span><h3>Understand the problem</h3><p>Start with the constraints that make each challenge interesting.</p></div><div><span>02</span><h3>Explore the approach</h3><p>Bring search, geometry, dynamic programming, and optimization to life.</p></div><div><span>03</span><h3>See the result</h3><p>Connect each algorithm to a route, a pair, a journey, or a timetable.</p></div></div><a class="btn-primary" href="/#projects">Explore all four projects →</a></section></main><footer>Team 8PM <span>Built with curiosity. Shared through code.</span><a href="https://github.com/ryna66/DSA" target="_blank" rel="noopener noreferrer">GitHub ↗</a></footer><script src="/site.js"></script></body></html>
