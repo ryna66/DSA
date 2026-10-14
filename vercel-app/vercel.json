@@ -1,0 +1,20 @@
+{
+  "buildCommand": null,
+  "outputDirectory": "public",
+  "framework": null,
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "@vercel/python@4.5.0",
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    }
+  ]
+}

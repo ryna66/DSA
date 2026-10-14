@@ -1,0 +1,512 @@
+================================================================================
+            QUESTION 4 — EXAM SCHEDULING (CAPACITATED GRAPH COLOURING)
+                              DETAILED DESCRIPTION
+================================================================================
+
+
+1. PROBLEM STATEMENT
+====================
+
+A university has N courses. Two courses conflict if at least one student is
+enrolled in both — they cannot be scheduled in the same time slot. Additionally,
+at most R exams can be held in any single slot (limited number of exam halls).
+
+Objective: Assign every course to a time slot such that:
+  (a) No two conflicting courses share a slot (graph coloring constraint)
+  (b) No slot exceeds R exams (capacity constraint)
+  (c) The total number of time slots K is minimized
+
+This is the CAPACITATED GRAPH COLOURING PROBLEM (CGCP), a generalization of
+the standard graph coloring problem (which is already NP-hard).
+
+Outputs:
+  1. Minimum number of slots for each algorithm, with optimality proof status
+  2. Slot-wise course listings (e.g., Slot 1: 2, 5, 9)
+  3. Formatted CSV timetable (rows = slots, columns = exam halls)
+  4. Web visualizer: conflict graph coloring, timetable grid, assignment
+     animation, and benchmark comparison charts
+
+Input Formats:
+  Option 1 (Manual Conflict List):
+    Line 1: N M R    (courses, conflict edges, halls per slot)
+    Next M lines: u v (courses u and v conflict)
+
+  Option 2 (Random Graph):
+    Specify N, R, edge density, and seed
+    Generates an Erdős–Rényi random conflict graph
+
+
+2. ARCHITECTURE OVERVIEW
+========================
+
+  src/ExamScheduler.java   → Core algorithms, parser, web server, CLI
+  src/BenchmarkReport.java → Performance benchmarks with SVG chart output
+  test.sh                  → Compile + run full test suite
+  static/                  → Web visualizer (HTML/CSS/JS)
+
+Language: Java 17+ (uses records, switch expressions, text blocks, pattern matching)
+Dependencies: ZERO external dependencies (no Maven, Gradle, JUnit, or Jackson)
+
+
+3. DATA STRUCTURES
+===================
+
+3.1 Graph Representation
+--------------------------
+  boolean[][] conflicts   N×N adjacency matrix for O(1) conflict checks
+  int[][] edges           Canonical sorted array of unique edge pairs
+  int[] degree            Precomputed vertex degrees
+
+  Why adjacency matrix instead of adjacency list?
+  - O(1) conflict checks during coloring (vs O(degree) for adjacency list)
+  - N ≤ ~25 for exact solver, so N² matrix is at most 625 booleans (~1 KB)
+  - The branch-and-bound inner loop needs the fastest possible conflict check
+
+3.2 Coloring State
+-------------------
+  int[] colors            Slot assignment for each course (0 = unassigned)
+  int[] loads             Number of courses assigned to each slot
+  boolean[] seen          Reusable array for O(N) saturation computation
+
+3.3 Data Records (Java 17 Records)
+------------------------------------
+  Graph(n, halls, conflicts, edges)  — Problem instance
+  Event(course, slot)                — Single assignment step (for animation)
+  Result(algorithm, slots, optimal,  — Complete solution summary
+         timedOut, lowerBound,
+         assignment, events,
+         timeMs, searchNodes, csv)
+  Comparison(graph, greedy, exact)   — Side-by-side algorithm comparison
+  Row(...)                           — Benchmark data row
+
+
+4. ALGORITHM 1 — CAPACITY-AWARE DSatur GREEDY HEURISTIC
+=========================================================
+
+4.1 What is DSatur?
+---------------------
+DSatur (Degree of Saturation) is a greedy graph coloring heuristic that
+dynamically selects the next vertex to color based on how "constrained" it is.
+The saturation degree of a vertex is the number of DISTINCT colors used by
+its already-colored neighbors.
+
+4.2 Selection Order (choose function)
+--------------------------------------
+At each step, select the unassigned course with:
+  1. HIGHEST saturation degree (most constrained — most distinct slot colors
+     among its conflicting neighbors)
+  2. Tie-break: HIGHEST degree in the conflict graph (most total conflicts)
+  3. Secondary tie-break: LOWEST course ID (deterministic)
+
+This ordering tends to color the most constrained vertices first, reducing
+the chance of creating unnecessary new slots.
+
+4.3 Capacity-Aware Assignment
+-------------------------------
+For the selected course, evaluate slots 1, 2, 3, ... in order:
+  - Check: Is the slot's load < R (hall capacity not exceeded)?
+  - Check: Does no conflicting neighbor already occupy this slot?
+  - If both pass: assign the course to this slot
+  - If no existing slot works: open a new slot (slot = used + 1)
+
+    boolean fits(Graph g, int course, int slot, int[] colors, int[] loads) {
+        if (loads[slot] >= g.halls()) return false;  // capacity check
+        for (int neighbor : allVertices) {
+            if (g.conflicts()[course][neighbor] && colors[neighbor] == slot)
+                return false;  // conflict check
+        }
+        return true;
+    }
+
+4.4 Event Trace
+-----------------
+Each assignment emits an Event(course, slot) record. The full sequence of
+events enables:
+  - Replay of the assignment process in the web UI animation
+  - Verification that the trace matches the final assignment (tested!)
+  - No intermediate state violates capacity or conflict constraints (tested!)
+
+4.5 Complexity
+---------------
+  Selection: O(N) to find max saturation among unassigned vertices
+             × N courses = O(N²)
+  Assignment: O(N × K) per course to check conflicts across slots
+  Overall: O(N² × K) ⊆ O(N³) where K = number of slots used
+
+  Space: O(N²) for adjacency matrix + O(N) for colors, loads, seen arrays
+
+
+5. ALGORITHM 2 — EXACT BRANCH-AND-BOUND SEARCH
+================================================
+
+5.1 Overview
+-------------
+Branch-and-bound is a systematic search that explores ALL valid colorings
+while pruning provably suboptimal branches. It guarantees finding the
+OPTIMAL (minimum) number of slots.
+
+5.2 Upper Bound Initialization
+--------------------------------
+The greedy DSatur solution is used as the initial incumbent (bestSlots).
+This immediately provides a strong upper bound, drastically reducing the
+search space. Many instances are solved optimally by DSatur alone, in which
+case the branch-and-bound confirms optimality with 0 search nodes.
+
+5.3 Lower Bound Calculation
+-----------------------------
+Two lower bounds are combined:
+
+  (a) Capacity lower bound:
+      ⌈N / R⌉ — at least this many slots needed to fit N courses into
+      slots of capacity R.
+
+  (b) Chromatic clique lower bound:
+      Find a maximal clique in the conflict graph using a greedy algorithm.
+      All clique members must be in different slots → clique size is a
+      lower bound on the chromatic number.
+      The greedy clique search processes vertices in degree-sorted order
+      for better results.
+
+  Combined: lower_bound = max(⌈N/R⌉, clique_size)
+
+  If DSatur solution matches the lower bound:
+      OPTIMALITY IS CERTIFIED IMMEDIATELY WITH 0 SEARCH NODES.
+      No branch-and-bound search is needed at all.
+
+5.4 Branch Selection (Variable Ordering)
+------------------------------------------
+At each recursive node, select the next course to assign using the SAME
+DSatur ordering as the greedy heuristic (choose function). This focuses
+the search on the most constrained variables first, maximizing pruning.
+
+5.5 Branching
+--------------
+For the selected course, try assigning it to:
+  - Each existing slot where it fits (no conflicts, capacity not exceeded)
+  - ONE new slot (slot = used + 1)
+
+  The "one new slot" symmetry breaking is critical (see below).
+
+5.6 Pruning Strategies
+------------------------
+
+(a) CAPACITY BOUNDING / PRUNING:
+    Compute remaining free seats: free = Σ(R - loads[slot]) across all open slots
+    Extra courses needing new slots: extra = max(0, unassigned - free)
+    If used + ⌈extra / R⌉ ≥ bestSlots → PRUNE this branch
+    (Opening more slots can't beat the current best)
+
+(b) SYMMETRY BREAKING ON EMPTY SLOTS:
+    All empty (unused) slots are identical — assigning course X to empty
+    slot 5 vs empty slot 7 produces equivalent solutions.
+    Therefore, only ONE canonical new slot label (used + 1) is explored.
+    This eliminates K! permutations of empty slots, massively reducing
+    the search space.
+
+(c) GREEDY INCUMBENT UPPER BOUND:
+    The initial DSatur solution provides a tight upper bound from the
+    very start. Any branch that reaches or exceeds bestSlots is pruned.
+
+(d) TIME BUDGET GUARD:
+    A millisecond-precision deadline ensures termination on intractable
+    instances. If the budget expires:
+    - The best solution found so far is returned
+    - The result is marked as timedOut = true, optimal = false
+    - This prevents the exact solver from hanging on large inputs
+
+5.7 Greedy Certification
+--------------------------
+If branch-and-bound proves optimality and the greedy DSatur achieved the
+SAME slot count, the greedy result is retroactively marked as optimal too.
+This provides useful information: "the greedy heuristic happened to find
+the optimal solution for this instance."
+
+5.8 Complexity
+---------------
+  Worst case: O(K^N) or O(N!) — NP-hard problem
+  Practical performance: drastically reduced by:
+    - Greedy incumbent upper-bounding
+    - Capacity + clique lower-bound pruning
+    - Symmetry breaking on empty slots
+    - DSatur variable ordering
+    - Time budget cap
+
+  Space: O(N²) for conflict matrix + O(N) recursion depth and path storage
+
+
+6. LOWER BOUND COMPUTATION IN DETAIL
+======================================
+
+6.1 Greedy Maximal Clique
+---------------------------
+A clique is a set of vertices where every pair is connected by an edge.
+In the exam scheduling context, a clique = a set of courses where every
+pair conflicts. All clique members MUST be in different slots.
+
+Algorithm:
+  1. Sort vertices by degree (descending)
+  2. Initialize clique = {first vertex}
+  3. For each remaining vertex v (in degree order):
+     - If v is adjacent to ALL current clique members → add v to clique
+  4. Return clique size as lower bound
+
+Time: O(N × |E|) ⊆ O(N³)
+Space: O(N) for candidate clique storage
+
+6.2 Combined Lower Bound
+--------------------------
+  lb = max(⌈N/R⌉, clique_size)
+
+This is computed once before search begins. If the greedy solution
+achieves lb slots, search is skipped entirely.
+
+
+7. INPUT PARSING
+=================
+
+7.1 parse(String text)
+------------------------
+Parses Option 1 format:
+  Line 1: N M R
+  Next M lines: u v (1-indexed conflict pairs)
+
+Handles:
+  - Deduplication of edges (u,v and v,u counted once)
+  - Self-loop rejection (u,u)
+  - Out-of-range ID detection
+  - Invalid/negative parameter detection
+
+7.2 randomGraph(int n, int halls, double density, long seed)
+--------------------------------------------------------------
+Generates an Erdős–Rényi random conflict graph:
+  - For each pair (i, j), add edge with probability = density
+  - Uses provided seed for reproducibility
+  - Returns a Graph record
+
+
+8. OUTPUT FORMATS
+==================
+
+8.1 Console Output
+--------------------
+For each algorithm:
+  - Algorithm name (Greedy DSatur / Exact Branch-and-Bound)
+  - Number of slots used
+  - Whether result is proven optimal
+  - Lower bound
+  - Execution time (ms)
+  - Search nodes explored (for B&B)
+  - Slot-wise course listing:
+      Slot 1: 2, 5, 9
+      Slot 2: 1, 4, 7
+      Slot 3: 3, 6, 8
+
+8.2 CSV Timetable
+-------------------
+  csv(Graph g, int[] colors, int slots):
+  Generates a matrix with:
+    - Rows = time slots
+    - Columns = exam halls (up to R)
+    - Cells = course numbers
+    - Header: Slot, Hall_1, Hall_2, ..., Hall_R
+
+8.3 JSON API Responses
+------------------------
+  json(Object value): A lightweight, zero-dependency JSON serializer
+  that handles records, maps, lists, arrays, strings, numbers, booleans,
+  and null. No Jackson, no Gson — pure manual serialization.
+
+
+9. WEB APPLICATION
+==================
+
+9.1 Backend (ExamScheduler.java → serve/api)
+----------------------------------------------
+Embedded HTTP server using JDK built-in com.sun.net.httpserver.HttpServer.
+Zero external dependencies.
+
+API endpoints:
+  POST /api/solve     → Parse input, run both algorithms, return comparison
+  POST /api/generate  → Generate random graph, solve, return comparison
+  POST /api/benchmark → Run benchmarks across multiple sizes
+
+9.2 Frontend (static/)
+-----------------------
+Interactive Canvas-based visualizer:
+  - CONFLICT GRAPH: Nodes colored by assigned slot, edges showing conflicts
+  - TIMETABLE GRID: Rows = slots, columns = halls, cells = course names
+  - ASSIGNMENT ANIMATION: Step-by-step replay of the DSatur assignment
+    process with playback controls
+  - BENCHMARK CHARTS: Slots used and execution time vs N for both algorithms
+  - Input modes: Manual conflict list or random graph generator
+
+
+10. BENCHMARK SYSTEM
+=====================
+
+BenchmarkReport.java performs:
+
+1. WARMUP: Initial runs to trigger JIT compilation (results discarded)
+
+2. MEASUREMENT: For each size N (e.g., 6, 8, 10, 12, 16, 20, 24):
+   - Generate a random conflict graph with specified density and halls
+   - Run DSatur greedy → record slots used and time
+   - Run exact B&B → record slots used, time, search nodes, optimality
+
+3. OUTPUT:
+   - CSV table with columns: N, greedy_slots, exact_slots, greedy_ms,
+     exact_ms, search_nodes, greedy_optimal, exact_optimal
+   - SVG chart: dual-panel standalone SVG showing:
+     Panel 1: Slots used vs N (both algorithms)
+     Panel 2: Execution time vs N (both algorithms, log scale)
+
+
+11. TEST SUITE
+===============
+
+78,656 assertions across 680 exhaustive/random graph comparisons.
+All tests pass with output: "PASS: 78656 assertions"
+
+11.1 Reference Solver
+-----------------------
+An INDEPENDENT brute-force reference solver (enumerate/reference functions)
+computes the true optimal coloring for small graphs (N ≤ 8) by exhaustively
+trying all possible assignments. This provides absolute ground-truth
+verification — the reference solver is completely separate from the
+DSatur and B&B implementations.
+
+11.2 Solution Validation (valid function)
+-------------------------------------------
+Every solution is checked for:
+  ✓ Complete assignment (all N courses assigned)
+  ✓ Slot bounds (1 ≤ slot ≤ K)
+  ✓ Hall capacity (0 < loads[slot] ≤ R)
+  ✓ Conflict independence (colors[u] ≠ colors[v] for all conflict pairs)
+  ✓ Replay verification (event stream matches final assignment, no
+    intermediate capacity or conflict violations)
+  ✓ CSV matrix validation (correct headers, row counts, hall columns,
+    no duplicate exams)
+
+11.3 Test Coverage Breakdown
+------------------------------
+
+  680 REFERENCE GRAPH COMPARISONS:
+    - All 64 possible undirected graphs on 4 vertices × 5 capacities
+      (R=1 through R=5) = 320 graphs
+    - 360 random graphs across sizes N=0 through N=8 with various
+      edge densities and seeds
+
+  GREEDY SUBOPTIMALITY DETECTION:
+    - Verified on examples/greedy_gap.txt where greedy uses 4 slots
+      but branch-and-bound finds 3 slots
+    - Proves that greedy is not always optimal
+
+  EDGE CASES:
+    - N=0 (empty graph)
+    - Single course
+    - Empty conflict graph (all courses independent)
+    - Complete graph (every pair conflicts → N slots needed)
+    - Duplicate edge deduplication
+    - Self-loops (rejected)
+    - Out-of-range course IDs (rejected)
+    - Invalid/negative parameters (rejected)
+    - Zero search budget → timeout handling
+
+  API & CLI INTEGRATION:
+    - /api/solve, /api/generate, /api/benchmark endpoints
+    - JSON escaping correctness
+    - Full CLI subprocess execution testing
+
+
+12. OPTIMALITY CERTIFICATION
+==============================
+
+The system carefully tracks and reports whether each result is proven optimal:
+
+  CASE 1: lower_bound == greedy_slots
+    → Both greedy and exact are marked optimal
+    → Zero search nodes needed
+    → Message: "Optimal (matches lower bound)"
+
+  CASE 2: exact_slots < greedy_slots
+    → Exact is marked optimal (proven by exhaustive search)
+    → Greedy is marked non-optimal
+    → Message: "Optimal (proven by branch-and-bound)"
+
+  CASE 3: Time budget expired before search completed
+    → Exact returns best-found solution
+    → Marked as timedOut = true, optimal = false
+    → Message: "Best found (search timed out)"
+
+  CASE 4: exact_slots == greedy_slots (after search)
+    → Both marked optimal (B&B confirmed greedy was already optimal)
+    → Message: "Optimal (confirmed by branch-and-bound)"
+
+
+13. COMPLEXITY SUMMARY
+=======================
+
+  DSatur Greedy:
+    Time:  O(N² × K) ⊆ O(N³)
+    Space: O(N²) for adjacency matrix
+
+  Exact Branch-and-Bound:
+    Time:  O(K^N) worst case, dramatically reduced by pruning
+    Space: O(N²) + O(N) recursion stack
+
+  Lower Bound (Clique):
+    Time:  O(N × |E|) ⊆ O(N³)
+    Space: O(N)
+
+  Reference Brute-Force (tests only):
+    Time:  O(K^N / K!) with symmetry breaking
+    Space: O(N)
+
+
+14. DEPENDENCIES
+=================
+
+  Language:  Java 17+ (records, switch expressions, text blocks)
+  HTTP:      JDK built-in com.sun.net.httpserver (module jdk.httpserver)
+  JSON:      Custom lightweight serializer (zero-dependency)
+  CSV:       Custom formatter (zero-dependency)
+  Frontend:  Vanilla ES6 JavaScript, HTML5 Canvas, responsive CSS3
+  Build:     Manual javac compilation (no Maven, no Gradle)
+  Testing:   Custom test runner (no JUnit)
+  External:  NONE — zero third-party libraries
+
+
+15. HOW TO RUN
+===============
+
+  # Compile
+  cd question4
+  mkdir -p build
+  javac -d build src/*.java
+
+  # Web visualizer
+  ./run.sh                           # http://127.0.0.1:8003
+
+  # CLI — solve from stdin (Option 1)
+  echo "7 10 3
+  1 3
+  1 4
+  1 6
+  2 4
+  2 5
+  2 7
+  3 4
+  5 6
+  5 7
+  6 7" | ./run.sh solve --out results
+
+  # CLI — random graph (Option 2)
+  echo "20 4" | ./run.sh random --density 0.3 --seed 42 --out results
+
+  # Benchmark
+  ./run.sh benchmark --sizes 6,8,10,12,16,20,24 --halls 3 --density 0.35 --out results
+
+  # Run full test suite (78,656 assertions)
+  bash test.sh
+
+================================================================================

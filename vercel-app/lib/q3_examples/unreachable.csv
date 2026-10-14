@@ -1,0 +1,5 @@
+#cities,4
+u,v,price,path,coupon,paid_price,step
+1,2,20,,,,
+2,3,30,,,,
+3,4,40,,,,

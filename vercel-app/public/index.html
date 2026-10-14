@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSA Hackathon — Team 8PM</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f0f13;--card:#1a1a24;--border:#2a2a3a;--accent:#6c63ff;--accent2:#00d2ff;--text:#e8e8f0;--muted:#8888a0;--glow:rgba(108,99,255,.15)}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+.hero{text-align:center;padding:4rem 2rem 2rem;max-width:800px}
+.hero h1{font-size:2.8rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.5rem}
+.hero .sub{color:var(--muted);font-size:1.1rem;margin-bottom:1rem}
+.hero .badge{display:inline-block;padding:.25rem .75rem;border-radius:999px;font-size:.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;background:var(--glow);color:var(--accent);border:1px solid var(--border);margin-bottom:2rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;padding:0 2rem 4rem;max-width:1200px;width:100%}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;text-decoration:none;color:var(--text);transition:all .3s ease;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .3s}
+.card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 8px 32px var(--glow)}
+.card:hover::before{opacity:1}
+.card .num{font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:.75rem}
+.card h2{font-size:1.35rem;font-weight:700;margin-bottom:.5rem;line-height:1.3}
+.card p{color:var(--muted);font-size:.9rem;line-height:1.6;margin-bottom:1rem}
+.card .tags{display:flex;flex-wrap:wrap;gap:.4rem}
+.card .tag{padding:.2rem .6rem;border-radius:6px;font-size:.7rem;font-weight:600;background:rgba(108,99,255,.1);color:var(--accent);border:1px solid rgba(108,99,255,.2)}
+.card .tag.lang{background:rgba(0,210,255,.1);color:var(--accent2);border-color:rgba(0,210,255,.2)}
+.footer{padding:2rem;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);width:100%;margin-top:auto}
+.footer a{color:var(--accent);text-decoration:none}
+.stats{display:flex;justify-content:center;gap:2rem;margin-bottom:2.5rem;flex-wrap:wrap}
+.stat{text-align:center}
+.stat .val{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+@media(max-width:600px){.hero h1{font-size:2rem}.grid{grid-template-columns:1fr;padding:0 1rem 3rem}}
+</style>
+</head>
+<body>
+<div class="hero">
+  <span class="badge">Interactive Visualizers</span>
+  <h1>DSA Hackathon</h1>
+  <p class="sub">Made by <strong style="color:var(--accent)">Team 8PM</strong><br>Four algorithm-focused projects with interactive web visualizers,<br>step-by-step animations, and empirical benchmarks.</p>
+  <div class="stats">
+    <div class="stat"><div class="val">4</div><div class="label">Projects</div></div>
+    <div class="stat"><div class="val">9</div><div class="label">Algorithms</div></div>
+    <div class="stat"><div class="val">80+</div><div class="label">Tests</div></div>
+    <div class="stat"><div class="val">0</div><div class="label">Dependencies</div></div>
+  </div>
+</div>
+<div class="grid">
+  <a class="card" href="/q1/">
+    <div class="num">Question 01</div>
+    <h2>🔑 Maze Solver with Keys &amp; Doors</h2>
+    <p>Navigate grid mazes collecting keys to unlock doors. Compare BFS, DFS, Dijkstra, and A* with animated step-by-step search playback.</p>
+    <div class="tags">
+      <span class="tag">BFS</span>
+      <span class="tag">A*</span>
+      <span class="tag">Bitmask DP</span>
+      <span class="tag lang">Python</span>
+    </div>
+  </a>
+  <a class="card" href="/q2/">
+    <div class="num">Question 02</div>
+    <h2>📍 Closest Pair of Points</h2>
+    <p>Find the nearest pair in 2D. Visualize recursive splitting, strip regions, and watch Divide &amp; Conquer beat Brute-Force by 60×.</p>
+    <div class="tags">
+      <span class="tag">Divide &amp; Conquer</span>
+      <span class="tag">O(n log n)</span>
+      <span class="tag lang">Python</span>
+    </div>
+  </a>
+  <a class="card" href="/q3/">
+    <div class="num">Question 03</div>
+    <h2>✈️ Cheapest Flights with Coupons</h2>
+    <p>Shortest path from city 1 to N with stop limits and half-price coupons. Animated airplane journey with live cost tracking.</p>
+    <div class="tags">
+      <span class="tag">Layered DP</span>
+      <span class="tag">Bellman-Ford</span>
+      <span class="tag lang">Python</span>
+    </div>
+  </a>
+  <a class="card" href="/q4/">
+    <div class="num">Question 04</div>
+    <h2>📅 Exam Scheduling</h2>
+    <p>Capacitated graph colouring for exam timetabling. DSatur greedy vs exact Branch &amp; Bound with optimality certification.</p>
+    <div class="tags">
+      <span class="tag">Graph Colouring</span>
+      <span class="tag">Branch &amp; Bound</span>
+      <span class="tag lang">Java → Python</span>
+    </div>
+  </a>
+</div>
+<div class="footer">
+  DSA Hackathon &mdash; Made by Team 8PM
+</div>
+</body>
+</html>

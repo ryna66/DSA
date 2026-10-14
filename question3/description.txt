@@ -1,0 +1,455 @@
+================================================================================
+                QUESTION 3 — CHEAPEST FLIGHT PATH WITH STOPS & COUPONS
+                              DETAILED DESCRIPTION
+================================================================================
+
+
+1. PROBLEM STATEMENT
+====================
+
+You must travel from city 1 to city N using one-way flights. Each flight has a
+ticket price p ≥ 0. You are allowed to make at most K intermediate stops
+(meaning at most K+1 flights). You also hold C discount coupons; a coupon can
+be applied to a single flight to halve its price (rounded down via floor
+division: ⌊p/2⌋), and at most one coupon can be used per flight.
+
+Find the minimum total cost to reach city N, or -1 if impossible within the
+stop constraint.
+
+Outputs:
+  1. Minimum cost (integer), or -1 if no valid path exists
+  2. Annotated CSV file with the path marked, indicating coupon usage,
+     paid prices, and journey step numbers
+  3. Interactive web visualization with animated airplane journey,
+     coupon highlighting, and running cost display
+
+Input Formats:
+  Option 1 (Standard Input):
+    Line 1: N M          (cities, flights)
+    Line 2: K C          (max stops, coupons)
+    Next M lines: u v p  (one-way flight from city u to v, price p)
+
+  Option 2 (CSV File):
+    CSV with columns u,v,price (or u,v,p)
+    Optional metadata header: #cities,N
+    K and C passed via stdin or CLI flags
+
+  Option 3 (Random Generator):
+    Specify cities, flights, stops, coupons, and seed
+    Generator builds a guaranteed solvable route
+
+
+2. ARCHITECTURE OVERVIEW
+========================
+
+  flights.py   → Core solver, parsers, CSV export, graph generator
+  app.py       → HTTP server + CLI dispatcher
+  static/      → Interactive flight map visualizer
+  tests/       → Unit tests with exhaustive reference comparisons
+  examples/    → 5 example inputs demonstrating different scenarios
+
+
+3. CORE ALGORITHM — LAYERED DYNAMIC PROGRAMMING
+=================================================
+
+3.1 Why Not Dijkstra or Held-Karp?
+------------------------------------
+This problem is NOT the Travelling Salesman Problem (no requirement to visit
+all cities). It is a shortest-path problem with TWO additional constraints:
+  - At most K intermediate stops (bounded path length)
+  - C coupons that create a binary choice per edge (pay full or half)
+
+Standard Dijkstra doesn't handle the stop limit correctly because it processes
+by cost, not by flight count. Bellman-Ford variant is closer, but we also need
+to track coupon state.
+
+The solution uses LAYERED DYNAMIC PROGRAMMING (bounded level expansion), which
+is essentially a modified Bellman-Ford with coupon tracking.
+
+3.2 State Representation
+--------------------------
+
+    DP[f][v][c] = minimum cost to reach city v using exactly f flights
+                  and c coupons
+
+  - f ranges from 0 to L, where L = min(K+1, N-1)
+  - v ranges from 1 to N
+  - c ranges from 0 to Q, where Q = min(C, L)
+
+3.3 Why the Bounds L and Q?
+-----------------------------
+Since all prices are nonneg (p ≥ 0), removing a cycle from a path never
+increases total cost and never uses more coupons. Therefore, an optimal path
+never revisits a city, meaning it uses at most N-1 flights. So:
+
+    L = min(K+1, N-1)     effective flight limit
+    Q = min(C, L)          effective coupon limit (can't use more coupons than flights)
+
+This prevents wasting computation when K or C are arbitrarily large.
+
+3.4 Base State
+---------------
+
+    DP[0][1][0] = 0        (at city 1, zero flights, zero coupons, zero cost)
+
+3.5 Transitions
+-----------------
+For each reachable state (city u, coupons c) in layer f with cost g:
+For every outgoing flight (u, v, p):
+
+  OPTION A — Pay full price:
+    DP[f+1][v][c] = min(DP[f+1][v][c], g + p)
+
+  OPTION B — Use one coupon (if c < Q):
+    DP[f+1][v][c+1] = min(DP[f+1][v][c+1], g + ⌊p/2⌋)
+
+3.6 Destination Terminal Behavior
+----------------------------------
+Once city N is reached in any layer, outgoing flights from N are NOT expanded
+further. The traveler has arrived; there's no benefit to continuing past the
+destination (since prices are nonnegative).
+
+3.7 Answer Extraction
+----------------------
+The answer is:
+    min over all f in [0, L], c in [0, Q] of DP[f][N][c]
+
+If no state reaches city N, return -1.
+
+3.8 Deterministic Tie-Breaking
+-------------------------------
+When multiple paths achieve the same minimum cost:
+  1. Prefer fewer flights (shorter path)
+  2. Among same-length paths, prefer fewer coupons used
+  3. Among identical (length, coupons), prefer original input edge order
+     (via dictionary insertion order in Python)
+
+This ensures reproducible, predictable output.
+
+3.9 Path Reconstruction
+-------------------------
+A backtrack hash map stores for each state (f, v, c):
+    parent = (source_city_u, prev_coupons, edge_id, coupon_applied_bool)
+
+Starting from the optimal final state at city N, we trace backwards through
+the hash map to recover:
+  - The complete flight sequence with city names
+  - Which ticket (edge ID) was used on each leg
+  - Whether a coupon was applied on each leg
+  - The actual price paid (full or halved)
+
+3.10 Complexity
+----------------
+Let N = cities, M = flights, K = max stops, C = coupons,
+    L = min(K+1, N-1), Q = min(C, L)
+
+  Time:  O(L × (N + M) × (Q + 1))
+         - L layers
+         - Each layer scans up to N×(Q+1) states and M edges
+         - 2 coupon choices per edge
+         When K,C ≥ N: reduces to O(N² × (N + M))
+         For small K,C: reduces to O(K × M × C), effectively O(M)
+
+  Space: O(L × N × (Q + 1) + M)
+         - DP table + adjacency list + backtrack map
+         - Very small memory footprint for visualizer-sized graphs
+
+
+4. INPUT PARSING
+=================
+
+4.1 parse_standard(text)
+--------------------------
+Parses Option 1 format:
+  Line 1: N M
+  Line 2: K C
+  Next M lines: u v p
+
+Validates: N ≥ 1, M ≥ 0, K ≥ 0, C ≥ 0, 1 ≤ u,v ≤ N, p ≥ 0
+
+4.2 parse_csv(text, cities=None)
+---------------------------------
+Parses Option 2 CSV format. Handles:
+  - Optional #cities,N metadata header
+  - Column headers: u,v,price or u,v,p (case-insensitive)
+  - Headerless files (auto-detected)
+  - UTF-8 BOM stripping
+  - Optional --cities CLI flag override
+  - Isolated city count on first line
+
+4.3 parse_flights(text)
+------------------------
+Parses flexible flight row formats:
+  - Comma-separated: "1,2,100"
+  - Space-separated: "1 2 100"
+  - Mixed whitespace
+
+4.4 Input Validation (validate)
+--------------------------------
+  - N must be positive integer
+  - All city IDs must be in [1, N]
+  - Prices must be nonneg integers
+  - K and C must be nonneg integers
+  - Rejects: negative values, floats, out-of-bounds IDs, malformed input
+
+
+5. CSV EXPORT
+==============
+
+export_csv(n, edges, path=None) generates an annotated CSV:
+
+  Header:    #cities,N
+  Columns:   u, v, price, path, coupon, paid_price, step
+
+  For edges on the solution path:
+    path = "x"
+    coupon = "yes" or "no"
+    paid_price = actual price paid (full or ⌊price/2⌋)
+    step = journey step number (1, 2, 3, ...)
+
+  For edges not on the path:
+    path = ""
+    coupon = ""
+    paid_price = ""
+    step = ""
+
+
+6. GRAPH GENERATOR
+===================
+
+generate(n, m, k, coupons, seed=None):
+
+1. Pre-install a guaranteed valid path from city 1 to city N:
+   - Path length ≤ K+1 flights (respects stop constraint)
+   - Random intermediate cities chosen without replacement
+   - Random prices assigned to each flight
+
+2. Fill remaining slots (up to M total edges) with random unique directed edges:
+   - No duplicate (u, v) pairs
+   - Random prices
+
+3. Result: a graph that is ALWAYS solvable within the K-stop limit
+
+The seed parameter ensures reproducible output for testing.
+
+
+7. WEB APPLICATION
+==================
+
+7.1 Backend (app.py)
+---------------------
+Multi-threaded HTTP server using Python's built-in SimpleHTTPRequestHandler.
+Zero external dependencies (no Flask, no pip packages).
+
+Endpoints:
+  GET  /api/examples  → Returns 5 pre-configured example scenarios
+  POST /api/solve     → Validates and solves a flight graph
+  POST /api/import    → Validates and parses uploaded CSV files
+  POST /api/generate  → Generates a random flight network
+
+Visualization limits enforced:
+  1 ≤ N ≤ 20 (cities), 0 ≤ M ≤ 150 (flights), price ≤ 10^9
+
+CLI subcommands:
+  python3 app.py serve [--port 8002]
+  python3 app.py solve [--csv FILE | stdin] [--output FILE]
+  python3 app.py generate --cities N --flights M --stops K --coupons C
+                          [--seed S] [--output FILE]
+
+7.2 Frontend (static/)
+-----------------------
+
+FLIGHT MAP VISUALIZATION:
+  - Cities rendered as SVG circles with labels
+  - Start city = green, destination = red, intermediate visited = orange
+  - Flights rendered as directed curved edges using quadratic and cubic
+    Bézier curves
+  - Parallel edges between same city pair get lane offsets for separation
+  - Self-loop flights rendered as loopback curves
+  - Solution path highlighted with distinct color
+  - Coupon flights highlighted in GOLD showing "original → discounted"
+
+ANIMATED JOURNEY:
+  - Airplane icon interpolated along Bézier flight paths
+  - Position and rotation angle computed via parametric evaluation
+  - Live running cost display (updates as each flight is taken)
+  - Stops used counter
+  - Coupons remaining counter
+  - Speed control: 1×, 2×, 3×, 5×
+  - Play, Pause, Seek, Stop controls
+  - Interactive itinerary buttons (click any leg to jump to that point)
+
+LAYOUT:
+  - cityPositions(n): computes node layout
+    - City 1 at left, city N at right
+    - Intermediate cities in alternating columns for visual clarity
+  - edgeGeometry(u, v, lane, count): generates curve parameters
+
+INPUT MODES:
+  - Manual text input (Option 1 format)
+  - CSV file upload (Option 2)
+  - Random generator form (Option 3)
+  - Pre-loaded examples dropdown
+
+
+8. TEST SUITE
+=============
+
+15 unit tests, all passing in ~0.17 seconds.
+
+8.1 tests/test_flights.py (10 tests)
+--------------------------------------
+
+  test_direct_only_and_floor_discount:
+    K=0 means only direct flights allowed.
+    Verifies integer floor division: 101 // 2 = 50 (not 50.5).
+
+  test_coupon_changes_the_best_route:
+    Without coupon: path A is cheapest.
+    With coupon: path B becomes cheapest (coupon on expensive leg).
+    Verifies the solver correctly switches routes when coupons are added.
+
+  test_unreachable_and_directed:
+    Returns -1 when:
+    - Intermediate stops exceed K
+    - Flights are directed wrong way (u→v exists but not v→u)
+    - Graph is empty (no flights)
+
+  test_start_is_destination:
+    N=1 edge case: traveler is already at destination. Cost = 0, empty path.
+
+  test_parallel_flights_and_marked_csv:
+    Multiple flights between same city pair (different prices).
+    Validates correct flight selection, marked CSV generation, and
+    CSV round-trip parsing (export then re-import).
+
+  test_zero_prices_cycles_and_ties:
+    Zero-price flights and cycles.
+    Verifies: no infinite loops, correct handling of free flights,
+    deterministic tie-breaking (fewer flights > fewer coupons > edge order).
+
+  test_randomized_exhaustive_reference:
+    250 RANDOMIZED TESTS comparing the DP solver against an independent
+    brute-force walk enumeration.
+    The reference solver (reference()) uses a DFS stack to enumerate
+    ALL possible walks from city 1 to N within K+1 flights, trying
+    all 2^C coupon assignments. It returns the true minimum cost.
+    The DP solver must match this ground truth on all 250 random graphs.
+
+  test_generated_graphs_always_have_bounded_route:
+    192 GENERATED GRAPHS tested across:
+    - N ∈ {1, 2, 5, 12}
+    - K ∈ {0, 1, 3, 30}
+    - C ∈ {0, 1, 4}
+    - 4 seeds per configuration
+    Ensures: every generated graph is solvable within stop limits.
+
+  test_input_and_csv_formats:
+    Standard text parsing, CSV metadata parsing (#cities,N),
+    UTF-8 BOMs, header variations (u,v,price vs u,v,p).
+
+  test_reject_invalid_values:
+    ValueError raised for: negative prices, floats, out-of-bounds city IDs,
+    malformed inputs, negative N/K/C.
+
+8.2 tests/test_question3_app.py (5 tests)
+-------------------------------------------
+
+  test_static_and_examples:
+    Serves static assets (/, /app.js, /styles.css).
+    /api/examples returns 5 bundled examples, all solve correctly.
+
+  test_csv_import_and_generate:
+    /api/import and /api/generate endpoints work correctly.
+
+  test_bad_requests:
+    HTTP 400 for: malformed JSON, negative prices, price > 10^9, N > 20.
+
+  test_cli_standard_and_csv:
+    End-to-end subprocess testing of CLI solve mode for both standard
+    input and --csv input.
+
+  test_cli_generator_and_unreachable:
+    CLI generate command + unreachable scenario printing -1.
+
+
+9. EXAMPLE FILES
+================
+
+  standard_input.txt (Option 1 format):
+    N=4, M=5, K=1, C=1. Solution: city 1 → 2 → 4, cost 150.
+
+  coupon_choice.csv (N=6, 10 flights):
+    Without coupon: route 1→2→6 costs 160.
+    With 1 coupon: route 1→3→6 costs 15 + ⌊170/2⌋ = 100 (optimal).
+    Demonstrates coupon changing the optimal route entirely.
+
+  two_coupons.csv (N=5, 7 flights):
+    C=2 coupons across a 3-flight journey 1→2→3→5.
+    Odd ticket prices test floor division: 101//2 = 50.
+
+  unreachable.csv (N=4, sequential: 1→2→3→4):
+    With K=0 (only direct flights), destination 4 is unreachable. Returns -1.
+
+  single_city.csv (N=1, 0 flights):
+    Edge case: origin is destination. Cost = 0.
+
+
+10. COMPLEXITY SUMMARY
+=======================
+
+  Let N = cities, M = flights, K = max stops, C = coupons
+      L = min(K+1, N-1)    effective flight bound
+      Q = min(C, L)          effective coupon bound
+
+  TIME:   O(L × (N + M) × (Q + 1))
+          - For typical small K, C:  O(K × M × C) ≈ O(M)
+          - For K, C ≥ N:           O(N² × (N + M))
+          - For N = 1:              O(1)
+
+  SPACE:  O(L × N × (Q + 1) + M)
+          - DP layers + adjacency list + backtrack table
+          - Very small for visualizer-sized graphs (few KB)
+
+
+11. DEPENDENCIES
+=================
+
+  Backend:  Python 3.10+ standard library ONLY
+            (http.server, urllib.parse, json, csv, io, random, argparse,
+             sys, pathlib, unittest, subprocess)
+  Frontend: Vanilla ES6+ JavaScript, HTML5, CSS3, SVG
+  External: NONE — zero pip packages, zero CDN dependencies
+
+
+12. HOW TO RUN
+===============
+
+  # Web visualizer
+  cd question3
+  python3 app.py                    # http://127.0.0.1:8002
+
+  # CLI solve (Option 1 — standard input)
+  python3 app.py solve --output flight_path.csv <<'EOF'
+  4 5
+  1 1
+  1 2 100
+  2 4 100
+  1 3 50
+  3 4 300
+  1 4 500
+  EOF
+
+  # CLI solve (Option 2 — CSV file)
+  printf '2 1\n' | python3 app.py solve \
+    --csv examples/coupon_choice.csv --output flight_path.csv
+
+  # CLI generate (Option 3 — random graph)
+  python3 app.py generate \
+    --cities 8 --flights 14 --stops 3 --coupons 2 --seed 42 \
+    --output random_flights.csv
+
+  # Run tests
+  python3 -m unittest discover -s tests -v
+
+================================================================================

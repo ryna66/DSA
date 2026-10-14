@@ -1,0 +1,336 @@
+================================================================================
+                    QUESTION 1 — KEYPATH: MAZE SOLVER WITH KEYS & DOORS
+                              DETAILED DESCRIPTION
+================================================================================
+
+
+1. PROBLEM STATEMENT
+====================
+
+Given an N×N grid (2 ≤ N ≤ 25) representing a maze, find the shortest path from
+Start (S) to Exit (E). The maze contains:
+
+  - '.'  → Open cell (passable)
+  - '#'  → Wall (impassable)
+  - 'S'  → Start position (exactly one)
+  - 'E'  → Exit position (exactly one)
+  - 'a'–'f' → Keys (lowercase letters, up to 6 types)
+  - 'A'–'F' → Doors (uppercase letters, matching keys)
+
+A door can only be entered if the corresponding key has already been collected.
+Stepping on a key cell permanently picks it up (keys are never consumed).
+The solver must find the shortest sequence of moves (Up, Down, Left, Right) from
+S to E, collecting all necessary keys along the way.
+
+Special handling: The letter 'E' is reserved for Exit. Door 'e' is represented
+as 'D:e' to avoid ambiguity.
+
+Input can be provided in three ways:
+  - Option 1: CSV file representing the grid
+  - Option 2: Interactive web UI with manual grid editing
+  - Option 3: Random maze generation with guaranteed solvability
+
+
+2. ARCHITECTURE OVERVIEW
+========================
+
+The project follows a clean separation of concerns:
+
+  maze.py    → Core logic (parsing, validation, solving, generation, export)
+  app.py     → HTTP server + CLI dispatcher
+  static/    → Frontend (HTML, CSS, JavaScript with playback engine)
+  tests/     → Unit tests (Python unittest + Node.js)
+  examples/  → 6 pre-built example mazes
+
+
+3. CORE ALGORITHM — STATE-SPACE BFS WITH BITMASK KEY TRACKING
+=============================================================
+
+3.1 State Representation
+-------------------------
+The fundamental insight is that the maze is not a simple 2D grid search. Because
+collecting a key changes what doors you can open, the state must encode both
+position AND inventory:
+
+    State = (row, col, keys_bitmask)
+
+The bitmask uses up to 6 bits, one per key type:
+    key 'a' → bit 0 (mask & 1)
+    key 'b' → bit 1 (mask & 2)
+    key 'c' → bit 2 (mask & 4)
+    ...
+    key 'f' → bit 5 (mask & 32)
+
+This means the full state space has at most:
+    N² × 2^T states, where T = number of key types (1 ≤ T ≤ 6)
+    Maximum: 25² × 2⁶ = 625 × 64 = 40,000 states
+
+3.2 Four Search Algorithms Implemented
+---------------------------------------
+
+(a) BFS (Breadth-First Search) — DEFAULT
+    - Data structure: collections.deque (FIFO queue)
+    - Explores states in increasing order of move count
+    - GUARANTEES shortest path (optimal)
+    - Time: O(N² · 2^T)
+    - Space: O(N² · 2^T)
+
+(b) DFS (Depth-First Search)
+    - Data structure: collections.deque used as stack (LIFO)
+    - Pushes children in reverse order so UP/RIGHT/DOWN/LEFT exploration
+      order is maintained
+    - Follows branches deeply; emits explicit "backtrack" trace frames
+    - Finds A valid path but NOT guaranteed shortest
+    - Useful for understanding search behavior and generating trace animations
+    - Time: O(N² · 2^T)
+    - Space: O(N² · 2^T) worst case for visited set
+
+(c) Dijkstra's Algorithm
+    - Data structure: heapq (min-priority queue) keyed on accumulated cost
+    - With uniform edge weight (1 per step), expansion order mirrors BFS
+    - GUARANTEES shortest path
+    - Time: O(N² · 2^T · log(N² · 2^T))
+    - Space: O(N² · 2^T)
+
+(d) A* Search
+    - Data structure: heapq keyed on f(n) = g(n) + h(n)
+    - g(n) = actual depth (number of moves taken)
+    - h(n) = Manhattan distance to Exit = |row - exit_row| + |col - exit_col|
+    - The heuristic is admissible (never overestimates) and consistent
+    - GUARANTEES shortest path while expanding significantly fewer states
+    - Time: O(N² · 2^T · log(N² · 2^T)) but typically much less in practice
+    - Space: O(N² · 2^T)
+
+3.3 How the Solver Works (Step by Step)
+---------------------------------------
+
+1. PARSE: The CSV/text input is parsed into a 2D grid. UTF-8 BOM is stripped.
+   The parser handles CSV format, space-separated, and compact single-character
+   strings. It also unescapes exported 'x(...)' cells so solutions can be
+   re-imported.
+
+2. VALIDATE: The grid is checked for:
+   - Dimensions: 2×2 to 25×25, must be square
+   - Exactly one 'S' and one 'E'
+   - Valid tokens only (., #, S, E, a-f, A-F, D:e)
+   - Number of distinct key/door types equals T (user-specified, 1-6)
+
+3. INITIALIZE: The starting state (start_row, start_col, mask=0) is pushed
+   onto the queue/stack/heap. A visited dictionary (best) maps each state to
+   its node ID.
+
+4. EXPAND: Pop a state from the frontier. For each of the 4 neighbors
+   (Up, Right, Down, Left):
+   - Check bounds (not outside grid)
+   - Check walls (not '#')
+   - Check doors: if the neighbor is a door 'A'-'F', check if the
+     corresponding key bit is set in the current mask
+   - If the neighbor is a key, update the mask: new_mask = mask | (1 << key_index)
+   - If the new state (new_row, new_col, new_mask) has not been visited,
+     add it to the frontier and mark as visited
+
+5. GOAL CHECK: When expanding a state at the Exit cell, the path is
+   reconstructed by following parent pointers back to the start.
+
+6. TRACE RECORDING: Every expansion step is recorded as an event containing:
+   - Action type: "expand", "backtrack" (DFS only), "goal", "exhausted"
+   - Current position, depth, mask
+   - Neighbor status for each direction: "boundary", "wall", "locked", "seen", "queued"
+   - Frontier delta (what was added/removed)
+   This trace powers the animated visualization in the web UI.
+
+7. EXPORT: The solved path is written as a CSV where path cells are marked
+   with 'x' and special cells (keys, doors, start, exit) are marked as
+   'x(token)' preserving their identity.
+
+3.4 Neighbor Checking Logic
+----------------------------
+
+    def _neighbours(grid, row, col, mask):
+        for dr, dc in [(-1,0), (0,1), (1,0), (0,-1)]:  # Up, Right, Down, Left
+            nr, nc = row + dr, col + dc
+            if not (0 <= nr < len(grid) and 0 <= nc < len(grid[0])):
+                yield "boundary"
+                continue
+            cell = grid[nr][nc]
+            if cell == '#':
+                yield "wall"
+            elif cell.isupper() and not (mask & (1 << key_index(cell))):
+                yield "locked"
+            else:
+                # Passable — compute new mask if it's a key
+                new_mask = mask | (1 << key_index(cell)) if cell.islower() else mask
+                yield (nr, nc, new_mask)
+
+
+4. MAZE GENERATION ALGORITHM
+=============================
+
+The generator creates solvable random mazes using Randomized DFS
+(Recursive Backtracking):
+
+1. Start with an odd-sized grid (7 ≤ size ≤ 25) filled entirely with walls.
+2. Begin at cell (1, 1), mark it open.
+3. Carve corridors with step size 2:
+   - Randomly choose an unvisited neighbor 2 cells away
+   - Remove the wall between current cell and chosen neighbor
+   - Move to the neighbor and repeat
+   - If stuck (all neighbors visited), backtrack
+4. Run BFS from (1, 1) to find the farthest reachable corridor cell → place Exit 'E' there.
+5. Place Start 'S' at (1, 1).
+6. Place keys and doors along the unique solution path in topologically valid
+   order (keys are always placed BEFORE their corresponding doors in the path).
+7. FALLBACK: If the carved tree length is insufficient for 2T key/door pairs,
+   a deterministic serpentine winding corridor is used instead.
+8. GUARANTEE: Every generated maze is solvable. This is verified by running
+   BFS after generation.
+
+The generator accepts an optional seed parameter for reproducible output.
+
+
+5. WEB APPLICATION
+==================
+
+5.1 Backend (app.py)
+--------------------
+A multi-threaded HTTP server using Python's built-in ThreadingHTTPServer.
+Zero external dependencies (no Flask, no pip packages).
+
+Endpoints:
+  GET  /             → Serves static/index.html
+  GET  /api/examples → Returns 6 preset example mazes as JSON
+  POST /api/solve    → Accepts {text, types, algorithm} → returns full solution
+  POST /api/generate → Accepts {size, types, seed} → returns generated grid
+
+CLI subcommands:
+  python3 app.py serve [--port PORT]
+  python3 app.py solve [--types T] [--csv PATH] [--algorithm {bfs,dfs,dijkstra,astar}] [--output PATH]
+  python3 app.py generate [--size N] [--types T] [--seed S] [--output PATH]
+
+5.2 Frontend (static/)
+-----------------------
+- index.html: Modern, accessible UI with tabbed input modes:
+  (1) Manual CSV text input
+  (2) CSV file upload
+  (3) Random maze generator with size/types/seed controls
+
+- app.js: Application logic handling API calls, grid rendering, color-coded
+  key/door pair visualization, algorithm selection, and result display.
+
+- playback.js: SearchPlayback class — a client-side playback engine that
+  reconstructs search snapshots dynamically. Instead of storing full grid
+  states per frame (memory expensive), it stores event diffs and applies
+  them forward/backward. Supports:
+  - Forward playback at variable speeds
+  - Single-frame stepping (forward and backward)
+  - Rewind to any frame via timeline scrubber
+  - Color-coded cells: white=open, black=wall, green=start, red=exit
+  - Each key/door pair gets a unique color
+  - Active candidate branch highlighting
+  - Search frontier display
+  - Locked-door indicators
+  - Live keypad inventory panel
+  - Neighbor check inspector
+  - Event log
+
+- styles.css: Responsive CSS with CSS variables, grid/flexbox layouts,
+  and animations.
+
+
+6. TEST SUITE
+=============
+
+All 21 Python unit tests + 3 Node.js tests pass in < 0.3 seconds.
+
+6.1 tests/test_maze.py
+-----------------------
+- Independent reference BFS solver using frozenset inventory for differential
+  verification (does NOT use the project's solve function — completely independent)
+- 270 generated mazes tested across:
+  - Sizes: 7, 11, 25
+  - Types: 1–6
+  - Seeds: 15 per configuration
+  - Verifies: solvability, full key/door usage, path validity
+- Input format validation tests (whitespace/BOM stripping, invalid tokens, D:e handling)
+
+6.2 tests/test_algorithms.py
+-----------------------------
+- Evaluates all 4 algorithms (BFS, DFS, Dijkstra, A*) against the independent
+  reference implementation across 150 random test cases
+- Asserts trace validity: parent-child links, depth increments, key-check status
+- Confirms DFS produces valid yet longer routes and emits backtrack events
+- Verifies A* expands fewer states than BFS while maintaining optimality
+
+6.3 tests/test_app.py
+----------------------
+- In-memory HTTP server integration testing using mock network sockets
+  (MemoryConnection) — no port binding required, avoids conflicts
+- Subprocess testing of CLI commands (solve, generate)
+
+6.4 tests/test_playback.cjs
+----------------------------
+- Node.js tests for the SearchPlayback engine
+- Replay and rewind state verification
+- Unsolvable maze animation and state verification
+
+
+7. EXAMPLE MAZES
+================
+
+  backtrack.csv   (7×7, T=1)  — Requires detour to grab key 'a', then backtrack
+                                 through start to unlock door 'A'
+  branches.csv    (9×9, T=1)  — Multiple branching corridors and dead ends;
+                                 highlights BFS vs DFS exploration differences
+  first_lock.csv  (7×7, T=1)  — Straightforward corridor testing basic key
+                                 pickup and door unlocking
+  three_keys.csv  (11×11, T=3) — Medium maze with 3 key/door pairs (a/A, b/B, c/C)
+  six_keys.csv    (15×15, T=6) — Maximum complexity: all 6 keys and doors
+  unsolvable.csv  (5×5, T=1)  — Key blocked behind walls; demonstrates −1 result
+                                 and exhausted search handling
+
+
+8. COMPLEXITY SUMMARY
+=====================
+
+  State space size:  V = N² × 2^T  (max 40,000)
+  Edge count:        E ≤ 4V         (4 directions per state)
+
+  BFS / DFS:         O(V + E) = O(N² · 2^T)
+  Dijkstra / A*:     O(E + V log V) = O(N² · 2^T · log(N² · 2^T))
+  Maze generation:   O(N²) for corridor carving + BFS farthest point
+
+  Memory: O(V) for visited set, parent pointers, frontier, and trace events.
+  The web visualizer stores event diffs rather than full grid snapshots,
+  keeping memory footprint at O(trace events).
+
+
+9. DEPENDENCIES
+===============
+
+  Backend:  Python 3.10+ standard library only
+            (http.server, urllib.parse, argparse, heapq, collections.deque,
+             csv, random, unittest, subprocess, json, pathlib, io)
+  Frontend: Vanilla HTML5, CSS3, ES6+ JavaScript — no npm, no frameworks
+  Testing:  Python unittest + Node.js built-in test runner (node:test)
+  External: NONE — zero pip packages, zero CDN dependencies
+
+
+10. HOW TO RUN
+==============
+
+  # Start web server
+  cd question1
+  python3 app.py                    # http://127.0.0.1:8000
+
+  # Solve from CLI
+  printf '1\n' | python3 app.py solve --csv examples/backtrack.csv --output path.csv
+  python3 app.py solve --types 3 --csv examples/three_keys.csv --algorithm astar
+
+  # Generate random maze
+  python3 app.py generate --size 15 --types 3 --seed 42 --output random.csv
+
+  # Run tests
+  python3 -m unittest discover -s tests -v
+  node tests/test_playback.cjs
+
+================================================================================
